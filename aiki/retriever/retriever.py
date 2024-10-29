@@ -1,5 +1,5 @@
 from typing import List, Dict, Protocol
-from aiki.modal.interaction_data import QueryData
+from aiki.modal.interaction_data import QueryData, SearchResultData
 
 class RecallStrategy(Protocol):
     def search(self, query: QueryData, num: int) -> List[Dict[str, str]]:
@@ -15,14 +15,14 @@ class BaseRetriever:
         """Pre-process the query before searching."""
         ...
 
-    def post_retrieve(self, results: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    def post_retrieve(self, results: SearchResultData) -> QueryData:
         """Post-process the results after searching."""
         ...
 
-    def _search(self, query: QueryData, num: int = None) -> QueryData:
+    def _search(self, query: QueryData, num: int = None) -> SearchResultData:
         ...
 
-    def search(self, query: List[Dict[str, Dict[str, str]]], num: int = None) -> List[Dict[str, Dict[str, str]]]:
+    def search(self, query: QueryData, num: int = None) -> QueryData:
         """Retrieve topk relevant data in corpus."""
         query = self.pre_retrieve(query)
         results = self._search(query, num)

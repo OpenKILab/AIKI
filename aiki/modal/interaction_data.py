@@ -5,7 +5,7 @@ from enum import Enum
 class QueryType(Enum):
     TEXT = "text"
     IMAGE = "image"
-    # Add more types as needed
+    # other types
 
 @dataclass
 class QueryItem:
@@ -15,6 +15,15 @@ class QueryItem:
 @dataclass
 class QueryData:
     items: List[QueryItem]
+    
+@dataclass
+class SearchResultItem:
+    query_item: QueryItem
+    score: float
+    
+@dataclass
+class SearchResultData:
+    results: List[SearchResultItem]
 
 # Example usage
 query = QueryData(items=[
@@ -31,5 +40,16 @@ query = QueryData(items=[
             "value": "base64_encoded_data",
             "annotations": []
         }
+    )
+])
+
+search_results = SearchResultData(results=[
+    SearchResultItem(
+        query_item=query.items[0],
+        score=0.95
+    ),
+    SearchResultItem(
+        query_item=query.items[1],
+        score=0.85
     )
 ])
