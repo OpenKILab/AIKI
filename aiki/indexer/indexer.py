@@ -1,5 +1,7 @@
 from aiki.corpus.database import DatabaseConnectionFactory
-from aiki.corpus.storage import BaseStorage
+from aiki.corpus.storage import BaseStorage, KVStorage
+from bson import ObjectId
+from datetime import datetime
 
 class Indexer:
     def __init__(self, model_path, sourcedb: BaseStorage, vectordb: BaseStorage):
@@ -10,19 +12,26 @@ class Indexer:
     def index(self, data):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
 
-
 class TextIndexer(Indexer):
     def index(self, data):
-        ...
-
+        id = ObjectId()
+        dataSchema = {
+            "id": id,
+            "modality": "text",
+            "summary": "",
+            "source_encoded_data": data,
+            "inserted_timestamp": datetime.now(),
+            "parent": [],
+            "children": []
+        }
+        self.sourcedb.create(dataSchema)
+        self.vectordb.create(dataSchema)
 
 class MultimodalIndexer(Indexer):
     ...
 
-
 class KnowledgeGraphIndexer(Indexer):
     ...
-
 
 # Example usage
 if __name__ == "__main__":
