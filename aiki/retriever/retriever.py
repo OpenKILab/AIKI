@@ -1,7 +1,7 @@
 from typing import List, Dict, Protocol
 
 class RecallStrategy(Protocol):
-    def search(self, query: str, num: int) -> List[Dict[str, str]]:
+    def search(self, query: List[Dict[str, Dict[str, str]]], num: int) -> List[Dict[str, str]]:
         """Search for relevant data based on the strategy."""
         ...
 
@@ -10,7 +10,7 @@ class BaseRetriever:
         self.topk = config.get("retrieval_topk", 10)
         self.recall_strategies = recall_strategies or []
 
-    def pre_retrieve(self, query: str) -> str:
+    def pre_retrieve(self, query: List[Dict[str, Dict[str, str]]]) -> List[Dict[str, Dict[str, str]]]:
         """Pre-process the query before searching."""
         ...
 
@@ -18,10 +18,10 @@ class BaseRetriever:
         """Post-process the results after searching."""
         ...
 
-    def _search(self, query: str, num: int = None) -> List[Dict[str, str]]:
+    def _search(self, query: List[Dict[str, Dict[str, str]]], num: int = None) -> List[Dict[str, Dict[str, str]]]:
         ...
 
-    def search(self, query: str, num: int = None) -> List[Dict[str, str]]:
+    def search(self, query: List[Dict[str, Dict[str, str]]], num: int = None) -> List[Dict[str, Dict[str, str]]]:
         """Retrieve topk relevant data in corpus."""
         query = self.pre_retrieve(query)
         results = self._search(query, num)
