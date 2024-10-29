@@ -25,13 +25,12 @@ class NodeSchema(TypedDict):
 class EdgeSchema(TypedDict):
     ...
 
-# Define a generic base class for storage
 @dataclass
 class StorageBase(ABC):
     db_connection: DatabaseConnection
 
     @abstractmethod
-    def create(self, id, data):
+    def create(self, data):
         ...
 
     @abstractmethod
@@ -46,17 +45,15 @@ class StorageBase(ABC):
     def delete(self, id):
         ...
 
-T = TypeVar("T")
-
 @dataclass
-class KVStorage(StorageBase, Generic[T]):
-    def create(self, identifier: str, data: KVSchema):
+class KVStorage(StorageBase):
+    def create(self, data: KVSchema):
         ...
 
-    def read(self, identifier: str) -> Union[KVSchema, None]:
+    def read(self, id: str) -> Union[KVSchema, None]:
         ...
 
-    def update(self, identifier: str, data: KVSchema):
+    def update(self, data: KVSchema):
         ...
 
     def delete(self, identifier: str):
@@ -66,30 +63,30 @@ class KVStorage(StorageBase, Generic[T]):
 class VectorStorage(StorageBase):
     embedding_func: callable
 
-    def create(self, identifier: str, data: VectorSchema):
+    def create(self, data: VectorSchema):
         ...
 
-    def read(self, identifier: str) -> Union[VectorSchema, None]:
+    def read(self, id: str) -> Union[VectorSchema, None]:
         ...
 
-    def update(self, identifier: str, data: VectorSchema):
+    def update(self, data: VectorSchema):
         ...
 
-    def delete(self, identifier: str):
+    def delete(self, id: str):
         ...
 
 @dataclass
 class GraphStorage(StorageBase):
-    def create(self, identifier: str, data: Union[NodeSchema, EdgeSchema]):
+    def create(self, data: Union[NodeSchema, EdgeSchema]):
         ...
 
-    def read(self, identifier: str) -> Union[NodeSchema, EdgeSchema, None]:
+    def read(self, id: str) -> Union[NodeSchema, EdgeSchema, None]:
         ...
 
-    def update(self, identifier: str, data: Union[NodeSchema, EdgeSchema]):
+    def update(self, data: Union[NodeSchema, EdgeSchema]):
         ...
 
-    def delete(self, identifier: str):
+    def delete(self, id: str):
         ...
 
 # Example usage
@@ -102,6 +99,13 @@ if __name__ == "__main__":
     vector_storage = VectorStorage(db_connection, embedding_func=lambda x: x)
     graph_storage = GraphStorage(db_connection)
 
-    # Example operations with schemas
-    kv_data = {"id": "kv1", "data": {"key1": "value1", "key2": "value2"}}
-    kv_storage.create(kv_data["id"], kv_data)
+    kv_data = {
+        "_id": ObjectId(),                          # Ensure this is a valid ObjectId
+        "modality": "text",                         # Example modality
+        "summary": "This is a summary",
+        "source_encoded_data": "SGVsbG8gd29ybGQ=",  # Example Base64 encoded data
+        "inserted_timestamp": datetime.now(),
+        "parent": [],
+        "children": []
+    }
+    kv_storage.create(kv_data)
