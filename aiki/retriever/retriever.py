@@ -1,7 +1,8 @@
 from typing import List, Dict, Protocol
+from aiki.modal.interaction_data import QueryData
 
 class RecallStrategy(Protocol):
-    def search(self, query: List[Dict[str, Dict[str, str]]], num: int) -> List[Dict[str, str]]:
+    def search(self, query: QueryData, num: int) -> List[Dict[str, str]]:
         """Search for relevant data based on the strategy."""
         ...
 
@@ -10,7 +11,7 @@ class BaseRetriever:
         self.topk = config.get("retrieval_topk", 10)
         self.recall_strategies = recall_strategies or []
 
-    def pre_retrieve(self, query: List[Dict[str, Dict[str, str]]]) -> List[Dict[str, Dict[str, str]]]:
+    def pre_retrieve(self, query: QueryData) -> QueryData:
         """Pre-process the query before searching."""
         ...
 
@@ -18,7 +19,7 @@ class BaseRetriever:
         """Post-process the results after searching."""
         ...
 
-    def _search(self, query: List[Dict[str, Dict[str, str]]], num: int = None) -> List[Dict[str, Dict[str, str]]]:
+    def _search(self, query: QueryData, num: int = None) -> QueryData:
         ...
 
     def search(self, query: List[Dict[str, Dict[str, str]]], num: int = None) -> List[Dict[str, Dict[str, str]]]:

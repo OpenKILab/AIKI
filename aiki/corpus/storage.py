@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     # Initialize storages
     kv_storage = KVStorage(db_connection)
-    vector_storage = VectorStorage(db_connection, embedding_func=lambda x: x)
+    vector_storage = VectorStorage(db_connection)
     graph_storage = GraphStorage(db_connection)
 
     kv_data = {
