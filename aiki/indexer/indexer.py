@@ -1,6 +1,5 @@
 from aiki.corpus.database import DatabaseConnectionFactory
 from aiki.corpus.storage import BaseStorage
-from aiki.corpus.strategies import TextModalDataStrategy
 
 class Indexer:
     def __init__(self, model_path, sourcedb: BaseStorage, vectordb: BaseStorage):
