@@ -2,7 +2,7 @@ from typing import List, Dict, Protocol
 from aiki.modal.interaction_data import QueryData, SearchResultData
 
 class RecallStrategy(Protocol):
-    def search(self, query: QueryData, num: int) -> List[Dict[str, str]]:
+    def search(self, query: QueryData, num: int) -> SearchResultData:
         """Search for relevant data based on the strategy."""
         ...
 
