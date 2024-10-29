@@ -15,7 +15,7 @@ class BaseRetriever:
         """Pre-process the query before searching."""
         ...
 
-    def post_retrieve(self, results: RetrievalData) -> RetrievalData:
+    def post_retrieve(self, query: RetrievalData, results: RetrievalData) -> RetrievalData:
         """Post-process the results after searching."""
         ...
 
@@ -26,7 +26,7 @@ class BaseRetriever:
         """Retrieve topk relevant data in corpus."""
         query = self.pre_retrieve(query)
         results = self._search(query, num)
-        results = self.post_retrieve(results)
+        results = self.post_retrieve(query, results)
         return results
     
     
