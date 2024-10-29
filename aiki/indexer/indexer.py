@@ -35,8 +35,6 @@ if __name__ == "__main__":
     sourcedb = BaseStorage(source_db_connection)
     vectordb = BaseStorage(faiss_connection)
 
-    sourcedb.register_strategy('text', TextModalDataStrategy())
-
     # Initialize specific indexers
     text_indexer = TextIndexer(model_path='path/to/model', sourcedb=sourcedb, vectordb=vectordb)
 
