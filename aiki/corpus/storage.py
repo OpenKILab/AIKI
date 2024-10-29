@@ -1,84 +1,111 @@
-from aiki.corpus.strategies import (
-    StorageStrategy,
-    TextModalDataStrategy,
-    ImageModalDataStrategy,
-    VideoModalDataStrategy,
-    AudioModalDataStrategy,
-    VectorDataStrategy,
-    KnowledgeGraphStrategy
-)
 from aiki.corpus.database import DatabaseConnection, DatabaseConnectionFactory
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal
+from bson import ObjectId
+from datetime import datetime
 
-class BaseStorage:
-    def __init__(self, db_connection: DatabaseConnection):
-        self.db_connection = db_connection
-        self.strategies = {}
+ModalityType = Literal["image", "video", "text", "audio"]
 
-    def register_strategy(self, data_type: str, strategy: StorageStrategy):
-        self.strategies[data_type] = strategy
+class KVSchema(TypedDict):
+    _id: ObjectId
+    modality: ModalityType
+    summary: str
+    source_encoded_data: str  # Base64 encoded data
+    inserted_timestamp: datetime
+    parent: List[ObjectId]
+    children: List[ObjectId]
 
-    def create(self, data_type: str, identifier, data):
-        if data_type in self.strategies:
-            self.strategies[data_type].create(self.db_connection, identifier, data)
-        else:
-            raise ValueError(f"No strategy registered for data type: {data_type}")
+class VectorSchema(TypedDict):
+    ...
 
-    def read(self, data_type: str, identifier):
-        if data_type in self.strategies:
-            return self.strategies[data_type].read(self.db_connection, identifier)
-        else:
-            raise ValueError(f"No strategy registered for data type: {data_type}")
+class NodeSchema(TypedDict):
+    ...
 
-    def update(self, data_type: str, identifier, data):
-        if data_type in self.strategies:
-            self.strategies[data_type].update(self.db_connection, identifier, data)
-        else:
-            raise ValueError(f"No strategy registered for data type: {data_type}")
+class EdgeSchema(TypedDict):
+    ...
 
-    def delete(self, data_type: str, identifier):
-        if data_type in self.strategies:
-            self.strategies[data_type].delete(self.db_connection, identifier)
-        else:
-            raise ValueError(f"No strategy registered for data type: {data_type}")
+@dataclass
+class StorageBase(ABC):
+    db_connection: DatabaseConnection
+
+    @abstractmethod
+    def create(self, data):
+        ...
+
+    @abstractmethod
+    def read(self, id):
+        ...
+
+    @abstractmethod
+    def update(self, id, data):
+        ...
+
+    @abstractmethod
+    def delete(self, id):
+        ...
+
+@dataclass
+class KVStorage(StorageBase):
+    def create(self, data: KVSchema):
+        ...
+
+    def read(self, id: str) -> Union[KVSchema, None]:
+        ...
+
+    def update(self, data: KVSchema):
+        ...
+
+    def delete(self, identifier: str):
+        ...
+
+@dataclass
+class VectorStorage(StorageBase):
+    embedding_func: callable
+
+    def create(self, data: VectorSchema):
+        ...
+
+    def read(self, id: str) -> Union[VectorSchema, None]:
+        ...
+
+    def update(self, data: VectorSchema):
+        ...
+
+    def delete(self, id: str):
+        ...
+
+@dataclass
+class GraphStorage(StorageBase):
+    def create(self, data: Union[NodeSchema, EdgeSchema]):
+        ...
+
+    def read(self, id: str) -> Union[NodeSchema, EdgeSchema, None]:
+        ...
+
+    def update(self, data: Union[NodeSchema, EdgeSchema]):
+        ...
+
+    def delete(self, id: str):
+        ...
 
 # Example usage
 if __name__ == "__main__":
     # Create a JSON file connection
     db_connection = DatabaseConnectionFactory.create_connection('json_file', file_path='data.json')
 
-    # Initialize storage
-    storage = BaseStorage(db_connection)
+    # Initialize storages
+    kv_storage = KVStorage(db_connection)
+    vector_storage = VectorStorage(db_connection)
+    graph_storage = GraphStorage(db_connection)
 
-    # Register strategies
-    storage.register_strategy('text', TextModalDataStrategy())
-    storage.register_strategy('image', ImageModalDataStrategy())
-    storage.register_strategy('video', VideoModalDataStrategy())
-    storage.register_strategy('audio', AudioModalDataStrategy())
-    storage.register_strategy('vector', VectorDataStrategy())
-    storage.register_strategy('knowledge_graph', KnowledgeGraphStrategy())
-
-    # text data
-    storage.create('text', 'doc1', {'content': 'This is a text document.'})
-    print(storage.read('text', 'doc1'))
-    storage.update('text', 'doc1', {'content': 'This is an updated text document.'})
-    print(storage.read('text', 'doc1'))
-    storage.delete('text', 'doc1')
-    print(storage.read('text', 'doc1'))
-    
-    # image data
-    print("Image Data Operations:")
-    storage.create('image', 'img1', {'content': 'This is image data.'})
-    print("Read Image:", storage.read('image', 'img1'))
-    storage.update('image', 'img1', {'content': 'This is updated image data.'})
-    print("Updated Image:", storage.read('image', 'img1'))
-    storage.delete('image', 'img1')
-    print("Deleted Image:", storage.read('image', 'img1'))
-
-    # vector data
-    print("\nVector Data Operations:")
-    storage.create('vector', 'vec1', [0.1, 0.2, 0.3])
-    print("Read Vector:", storage.read('vector', 'vec1'))
-    storage.update('vector', 'vec1', [0.4, 0.5, 0.6])
-    print("Updated Vector:", storage.read('vector', 'vec1'))
-    storage.delete('vector', 'vec1')
-    print("Deleted Vector:", storage.read('vector', 'vec1'))
+    kv_data = {
+        "_id": ObjectId(),                          # Ensure this is a valid ObjectId
+        "modality": "text",                         # Example modality
+        "summary": "This is a summary",
+        "source_encoded_data": "SGVsbG8gd29ybGQ=",  # Example Base64 encoded data
+        "inserted_timestamp": datetime.now(),
+        "parent": [],
+        "children": []
+    }
+    kv_storage.create(kv_data)
