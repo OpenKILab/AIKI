@@ -15,6 +15,7 @@ class KVSchema(TypedDict):
     inserted_timestamp: datetime
     parent: List[ObjectId]
     children: List[ObjectId]
+    tensor: List[bool]
 
 class VectorSchema(TypedDict):
     ...
