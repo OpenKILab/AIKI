@@ -2,10 +2,11 @@ from aiki.corpus.database import DatabaseConnectionFactory
 from aiki.corpus.storage import BaseStorage, KVStorage
 from bson import ObjectId
 from datetime import datetime
+from abc import ABC, abstractmethod
 
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType
 
-class Indexer:
+class BaseIndexer(ABC):
     def __init__(self, model_path, sourcedb: BaseStorage, vectordb: BaseStorage):
         self.model_path = model_path
         self.sourcedb = sourcedb  # Source database storage
@@ -14,7 +15,7 @@ class Indexer:
     def index(self, data):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
 
-class TextIndexer(Indexer):
+class TextIndexer(BaseIndexer):
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
             id = ObjectId()
@@ -29,7 +30,6 @@ class TextIndexer(Indexer):
             }
             self.sourcedb.create(dataSchema)
             chunks = self.chunker.chunk(data)
-            # 将chunk 插入到 sourcedb中
             for data in chunks:
                 cur_id = ObjectId()
                 dataSchema = {
@@ -50,7 +50,7 @@ class TextIndexer(Indexer):
                 self.vectordb.create(VectorSchema)
                 '''
         
-class MultimodalIndexer(Indexer):
+class MultimodalIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseStorage, vectordb: BaseStorage):
         super().__init__(model_path, sourcedb, vectordb)
         self.text_indexer = TextIndexer(model_path, sourcedb, vectordb)
@@ -63,9 +63,38 @@ class MultimodalIndexer(Indexer):
         else:
             raise ValueError(f"Unsupported data type: {data.type}")
 
-class KnowledgeGraphIndexer(Indexer):
+class KnowledgeGraphIndexer(BaseIndexer):
     ...
+    
 
+# 多模态数据生成文本摘要
+class BaseSummaryGenerator(ABC):
+    def __init__(self, model_path):
+        self.model_path = model_path
+        
+    def generate_summary(self, data):
+        ...
+        
+class ModelSummaryGenerator(BaseSummaryGenerator):
+    def __init__(self, model_path):
+        super().__init__(model_path)
+        self.model = self.load_model(self.model_path) 
+    
+    def load_model(self, model_path):
+        # load tokenizer and model
+        ...
+        
+    def generate_summary(self, data):
+        ...
+
+class APISummaryGenerator(BaseSummaryGenerator):
+    def __init__(self):
+        super().__init__()
+        
+    def generate_summary(self, data):
+        # request with config
+        ...
+    
 # Example usage
 if __name__ == "__main__":
     # JSON file
