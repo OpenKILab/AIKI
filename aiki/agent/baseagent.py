@@ -28,14 +28,15 @@ class InfoExtractAgent(BaseAgent):
         return information
 
 
-    def talk(self, message:List[Message]) -> str:
+    def talk(self, message:List[Message]) -> List[Message]:
         history = ""
-        for msg in Message:
-            history += f"{msg.role}: {msg.content}"
+        for msg in message:
+            history += f"{msg.role}: {msg.content}\n\n"
        
         extracted_information = self.extract_information(history)
-
-        return extracted_information
+        extract_msg = Message(role=self.name, content=extracted_information)  
+        message.append(extract_msg)
+        return message
 
 
 
@@ -47,20 +48,20 @@ class MemoryEditAgent(BaseAgent):
         self.name = 'MemoryEditAgent'
         ...
 
-    def search(self, query, n=3):
+    def search(self, query:str, n=3):
         ...
     
-    def add(self, id, data):
+    def add(self, id:str, data:str):
         ...
 
-    def delete(self, id):
+    def delete(self, id:str):
         ...
     
-    def edit(self, id, data):
+    def edit(self, id:str, data:str):
         # merge & replace
         ... 
     
-    def merge_memory(self, id, data_1, data_2):
+    def merge_memory(self, id, data_1:str, data_2:str):
         ... 
 
 
@@ -72,18 +73,23 @@ class MemoryEditAgent(BaseAgent):
         except:
             return False
 
-    def process_memory(self, temp_memory, related_memory) -> str:
+    def process_memory(self, temp_memory:str, related_memory:str, context:str) -> str:
         ...
-        prompt = process_memory_prompt_template.format(temp_memory=temp_memory,related_memory=related_memory)
+        prompt = process_memory_prompt_template.format(temp_memory=temp_memory, related_memory=related_memory, context=context)
         function_call = self.process_model(prompt)
         return function_call
         
 
 
-    def talk(self, message) -> str:
-        temp_memory = message['information']
+    def talk(self, message:List[Message]) -> str:
+        history = ""
+        for msg in message:
+            if msg.role != 'InfoExtractAgent':
+                history += f"{msg.role}: {msg.content}\n\n"
+            else:
+                temp_memory = msg.content
         related_memory = self.search(self, temp_memory)
-        process_function = self.process_memory(temp_memory=temp_memory, related_memory=related_memory)
+        process_function = self.process_memory(temp_memory=temp_memory, related_memory=related_memory, context=history)
         while not self.load_function(process_function):
             process_function = self.process_memory(temp_memory=temp_memory, related_memory=related_memory)
         return process_function
