@@ -19,9 +19,16 @@ class BaseChunker(ABC):
 
 class FixedSizeChunker(BaseChunker):
     def __init__(self, chunk_size: int):
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer")
         self.chunk_size = chunk_size
 
     def chunk(self, data: str):
+        if not isinstance(data, str):
+            raise TypeError("data must be a string")
+        if not data:
+            return []
+
         chunks = []
         for i in range(0, len(data), self.chunk_size):
             chunks.append(data[i:i + self.chunk_size])
