@@ -4,13 +4,15 @@ from bson import ObjectId
 from datetime import datetime
 from abc import ABC, abstractmethod
 
+from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType
 
 class BaseIndexer(ABC):
-    def __init__(self, model_path, sourcedb: BaseStorage, vectordb: BaseStorage):
+    def __init__(self, model_path, sourcedb: BaseStorage, vectordb: BaseStorage, chunker:BaseChunker = FixedSizeChunker()):
         self.model_path = model_path
         self.sourcedb = sourcedb  # Source database storage
         self.vectordb = vectordb  # Vector database storage
+        self.chunker = chunker
         
     def index(self, data):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
@@ -18,12 +20,14 @@ class BaseIndexer(ABC):
 class TextIndexer(BaseIndexer):
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
+            if retreval_data.type != RetrievalType.TEXT:
+                raise ValueError(f"Unsupported data type: {retreval_data.type}")
             id = ObjectId()
             dataSchema = {
                 "id": id,
                 "modality": "text",
                 "summary": "",
-                "source_encoded_data": data,
+                "source_encoded_data": retreval_data["content"],
                 "inserted_timestamp": datetime.now(),
                 "parent": [],
                 "children": []

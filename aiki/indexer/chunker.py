@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, str
+from typing import List
 
 class BaseChunker(ABC):
     '''
@@ -23,6 +23,6 @@ class FixedSizeChunker(BaseChunker):
 
     def chunk(self, data: str):
         chunks = []
-        for i in range(0, len(data), self.char_limit):
-            chunks.append(data[i:i + self.char_limit])
+        for i in range(0, len(data), self.chunk_size):
+            chunks.append(data[i:i + self.chunk_size])
         return chunks
