@@ -1,5 +1,5 @@
 from openai import OpenAI
-from aiki.corpus.database import DatabaseConnectionFactory, DatabaseConnection, KVSchema
+from aiki.corpus.mockdatabase import DatabaseConnectionFactory, DatabaseConnection, KVSchema
 from aiki.corpus.storage import StorageBase
 from bson import ObjectId
 from datetime import datetime
@@ -91,10 +91,10 @@ class ModelSummaryGenerator(BaseSummaryGenerator):
 class APISummaryGenerator(BaseSummaryGenerator):
     def __init__(self):
         super().__init__()
-        self.client = OpenAI(
-            api_key = os.getenv('OPENAI_API_KEY')
-            base_url = 'https://api.claudeshop.top/v1'
-        )
+        # self.client = OpenAI(
+        #     api_key = os.getenv('OPENAI_API_KEY')
+        #     base_url = 'https://api.claudeshop.top/v1'
+        # )
         
     def generate_summary(self, data: RetrievalData):
         import openai
@@ -120,7 +120,7 @@ class APISummaryGenerator(BaseSummaryGenerator):
                                     {
                         "type": "image_url",
                         "image_url":{
-                            "url": f"data:image/jpeg;base64,{base64_image}"
+                            "url": f"data:image/jpeg;base64,{"""base64_image"""}"
                         }
                         },
                         ]
@@ -130,8 +130,8 @@ class APISummaryGenerator(BaseSummaryGenerator):
                 )
                 summary = response.choices[0].text.strip()
                 summaries.append(summary)
-            if item["type"] == RetrievalType.IMAGE:
-                response = 
+            # if item["type"] == RetrievalType.IMAGE:
+            #     response = 
         return summaries
     
 # Example usage

@@ -1,6 +1,6 @@
 from abc import ABC
 from typing import List, Dict, Protocol
-from aiki.corpus.database import DatabaseConnectionFactory
+from aiki.corpus.mockdatabase import DatabaseConnectionFactory
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType, RetrievalItem
 
 class RecallStrategy(Protocol):

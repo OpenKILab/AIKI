@@ -1,4 +1,4 @@
-from aiki.corpus.database import DatabaseConnection, DatabaseConnectionFactory, KVSchema, VectorSchema, NodeSchema, EdgeSchema
+from aiki.corpus.mockdatabase import DatabaseConnection, DatabaseConnectionFactory, KVSchema, VectorSchema, NodeSchema, EdgeSchema
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal

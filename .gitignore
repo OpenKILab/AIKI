@@ -134,3 +134,5 @@ dmypy.json
 *.bin
 
 *.sqlite3
+
+/db
