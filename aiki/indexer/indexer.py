@@ -1,3 +1,4 @@
+from typing import List
 from openai import OpenAI
 from aiki.config.config import Config
 from aiki.corpus.mockdatabase import DatabaseConnectionFactory, DatabaseConnection, KVSchema
@@ -8,9 +9,6 @@ from abc import ABC, abstractmethod
 
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType
-
-import os
-import openai
 
 class BaseIndexer(ABC):
     def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker()):
@@ -98,15 +96,9 @@ class APISummaryGenerator(BaseSummaryGenerator):
         )
         self.model = config.get('model', "gpt-4o-mini")
         
-    def generate_summary(self, data: RetrievalData):
+    def generate_summary(self, data: RetrievalData) -> List[str]:
         summaries = []
         for item in data.items:
-            import logging
-
-            # Configure logging
-            logging.basicConfig(level=logging.INFO)
-            logging.info(item)
-
             if item.type not in [RetrievalType.IMAGE, RetrievalType.TEXT]:
                 continue
             
@@ -135,7 +127,7 @@ class APISummaryGenerator(BaseSummaryGenerator):
                     }
                 ],
             )
-            summary = response.choices[0].text.strip()
+            summary = response.choices[0].message.content
             summaries.append(summary)
         return summaries
     
