@@ -25,20 +25,20 @@ class BaseIndexer(ABC):
 class TextIndexer(BaseIndexer):
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
-            if retreval_data["type"] != RetrievalType.TEXT:
+            if retreval_data.type != RetrievalType.TEXT:
                 raise ValueError(f"Unsupported data type: {retreval_data.type}")
             id = ObjectId()
             dataSchema = KVSchema(
                 _id=id,
                 modality="text",
                 summary="",
-                source_encoded_data=retreval_data["content"],
+                source_encoded_data=retreval_data.content,
                 inserted_timestamp=datetime.now(),
                 parent=[],
                 children=[]
             )
             self.sourcedb.create(dataSchema)
-            chunks = self.chunker.chunk(retreval_data["content"])
+            chunks = self.chunker.chunk(retreval_data.content)
             for data in chunks:
                 cur_id = ObjectId()
                 dataSchema = KVSchema(
