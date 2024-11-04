@@ -18,7 +18,7 @@ class BaseChunker(ABC):
         raise NotImplementedError(f"{self.__class__.__name__}.chunk() must be implemented in subclasses.")
 
 class FixedSizeChunker(BaseChunker):
-    def __init__(self, chunk_size: int):
+    def __init__(self, chunk_size: int = 1024):
         if chunk_size <= 0:
             raise ValueError("chunk_size must be a positive integer")
         self.chunk_size = chunk_size

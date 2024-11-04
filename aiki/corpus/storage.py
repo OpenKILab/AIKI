@@ -1,30 +1,9 @@
-from aiki.corpus.database import DatabaseConnection, DatabaseConnectionFactory
+from aiki.corpus.database import DatabaseConnection, DatabaseConnectionFactory, KVSchema, VectorSchema, NodeSchema, EdgeSchema
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal
 from bson import ObjectId
 from datetime import datetime
-
-ModalityType = Literal["image", "video", "text", "audio"]
-
-class KVSchema(TypedDict):
-    _id: ObjectId
-    modality: ModalityType
-    summary: str
-    source_encoded_data: str  # Base64 encoded data
-    inserted_timestamp: datetime
-    parent: List[ObjectId]
-    children: List[ObjectId]
-    tensor: List[bool]
-
-class VectorSchema(TypedDict):
-    ...
-
-class NodeSchema(TypedDict):
-    ...
-
-class EdgeSchema(TypedDict):
-    ...
 
 @dataclass
 class StorageBase(ABC):
@@ -93,7 +72,7 @@ class GraphStorage(StorageBase):
 # Example usage
 if __name__ == "__main__":
     # Create a JSON file connection
-    db_connection = DatabaseConnectionFactory.create_connection('json_file', file_path='data.json')
+    db_connection = DatabaseConnectionFactory.create_connection('json_file', file_name='data.json')
 
     # Initialize storages
     kv_storage = KVStorage(db_connection)

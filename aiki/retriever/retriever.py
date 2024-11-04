@@ -1,15 +1,28 @@
+from abc import ABC
 from typing import List, Dict, Protocol
-from aiki.modal.retrieval_data import RetrievalData
+from aiki.corpus.database import DatabaseConnectionFactory
+from aiki.modal.retrieval_data import RetrievalData, RetrievalType, RetrievalItem
 
 class RecallStrategy(Protocol):
     def search(self, query: RetrievalData, num: int) -> RetrievalData:
         """Search for relevant data based on the strategy."""
         ...
 
-class BaseRetriever:
+class BaseRetriever(ABC):
     def __init__(self, config, recall_strategies: List[RecallStrategy] = None):
-        self.topk = config.get("retrieval_topk", 10)
+        self.topk = config.get("retrieval_topk", 4)
         self.recall_strategies = recall_strategies or []
+        self.config = config
+        self.database = {}
+        self.load_config()
+    
+    def load_config(self):
+        for db_config in self.config.get("databases", []):
+            db_type = db_config.get("type")
+            db_args = db_config.get("args")
+            if db_type:
+                connection = DatabaseConnectionFactory.create_connection(db_type=db_type, **db_args)
+                self.database[db_type] = connection
 
     def pre_retrieve(self, query: RetrievalData) -> RetrievalData:
         """Pre-process the query before searching."""
@@ -29,36 +42,42 @@ class BaseRetriever:
         results = self.post_retrieve(query, results)
         return results
     
-    
 class DenseRetriever(BaseRetriever):
     def __init__(self, config):
         super().__init__(config)
-        self.storages = self._initialize_storages(config)
-
-    def _initialize_storages(self, config):
-        '''
-        {
-            "retrieval_topk": 10,
+        
+    def _search(self, query: RetrievalData, num: int = 4) -> RetrievalData:
+        queries = [q.content for q in query.items if q.type == RetrievalType.TEXT]
+        results = self.database['chroma'].query(queries, n_results = num)
+        return None
+    
+    def search(self, query: RetrievalData, num: int = 4) -> RetrievalData:
+        results = self._search(query, num)
+        return results
+        
+if __name__ == "__main__":
+    config = {
+            "retrieval_topk": 2,
             "databases": [
                 {
-                    "type": "mongo_db",
-                    "name": "mongo_db",
-                    "host": "localhost",
-                    "port": 27017,
-                    "database_name": "my_database",
-                    "collection_name": "my_collection",
-                    "strategies": ["text", "image"]
+                    "type": "json_file",
+                    "args": {
+                        "file_name": "json_file",
+                    }
                 },
                 {
-                    "type": "vector_db",
-                    "name": "vector_db",
-                    "host": "localhost",
-                    "port": 1234,
-                    "index_name": "my_index",
-                    "strategies": ["vector"]
+                    "type": "chroma",
+                    "args": {
+                        "index_file": "chroma_index",
+                    }
                 }
             ]
         }
-        '''
-        ...
-        
+    dense_retriever = DenseRetriever(config=config)
+    retrieval_data = RetrievalData(items=[
+        RetrievalItem(
+            content= "Marley",
+            type= RetrievalType.TEXT
+        )
+    ])
+    dense_retriever.search(retrieval_data)
