@@ -1,4 +1,5 @@
 from openai import OpenAI
+from aiki.config.config import Config
 from aiki.corpus.mockdatabase import DatabaseConnectionFactory, DatabaseConnection, KVSchema
 from aiki.corpus.storage import StorageBase
 from bson import ObjectId
@@ -9,6 +10,7 @@ from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType
 
 import os
+import openai
 
 class BaseIndexer(ABC):
     def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker()):
@@ -89,49 +91,52 @@ class ModelSummaryGenerator(BaseSummaryGenerator):
         ...
 
 class APISummaryGenerator(BaseSummaryGenerator):
-    def __init__(self):
-        super().__init__()
-        # self.client = OpenAI(
-        #     api_key = os.getenv('OPENAI_API_KEY')
-        #     base_url = 'https://api.claudeshop.top/v1'
-        # )
+    def __init__(self, config: Config):
+        super().__init__(config.get('model_path', 'default_model_path'))
+        self.client = OpenAI(
+            base_url=config.get('base_url', "https://api.claudeshop.top/v1")
+        )
+        self.model = config.get('model', "gpt-4o-mini")
         
     def generate_summary(self, data: RetrievalData):
-        import openai
-        
-        # Assuming data.items is a list of dictionaries with a "content" key
         summaries = []
         for item in data.items:
-            if item["type"] == RetrievalType.TEXT:
-                response = self.client.chat.completions.create(
-                    model="xxx",#选择模型
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are a helpful assistant."
-                        },
-                        {
-                            "role": "user",
-                            "content":[
+            import logging
+
+            # Configure logging
+            logging.basicConfig(level=logging.INFO)
+            logging.info(item)
+
+            if item.type not in [RetrievalType.IMAGE, RetrievalType.TEXT]:
+                continue
+            
+            content_type = "image_url" if item.type == RetrievalType.IMAGE else "text"
+            content_value = {
+                "url": f"data:image/jpeg;base64,{item.content}"
+            } if item.type == RetrievalType.IMAGE else item.content
+            
+            prompt_text = "What is in this image?" if item.type == RetrievalType.IMAGE else "Please summarize this text."
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
                             {
-                        "type": "text",
-                        "text": "xxxxxxxxxxxxxxxxxx"
-                        },
-                                    {
-                        "type": "image_url",
-                        "image_url":{
-                            "url": f"data:image/jpeg;base64,{"""base64_image"""}"
-                        }
-                        },
-                        ]
-                        }
-                    ],
-                    stream=True,
-                )
-                summary = response.choices[0].text.strip()
-                summaries.append(summary)
-            # if item["type"] == RetrievalType.IMAGE:
-            #     response = 
+                                "type": "text",
+                                "text": prompt_text,
+                            },
+                            {
+                                "type": content_type,
+                                content_type: content_value,
+                            },
+                        ],
+                    }
+                ],
+            )
+            summary = response.choices[0].text.strip()
+            summaries.append(summary)
         return summaries
     
 # Example usage
