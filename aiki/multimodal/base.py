@@ -54,18 +54,18 @@ class MultiModalProcessor:
     def __init__(self):
         self.handlers: Dict[str, BaseModalityHandler] = {}
 
-    def register_handler(self, modality_type: str, handler: BaseModalityHandler):
+    def register_handler(self, modality_type: ModalityType, handler: BaseModalityHandler):
         if not isinstance(handler, BaseModalityHandler):
             raise TypeError("Handler must implement ModalityHandler interface")
-        self.handlers[modality_type] = handler
+        self.handlers[modality_type.value] = handler
 
-    def _get_handler(self, modality_type: str) -> BaseModalityHandler:
-        handler = self.handlers.get(modality_type)
+    def _get_handler(self, modality_type: ModalityType) -> BaseModalityHandler:
+        handler = self.handlers.get(modality_type.value)
         if not handler:
             raise ValueError(f"No handler registered for modality: {modality_type}")
         return handler
 
-    def execute_operation(self, modality_type: str, operation: str, *args, **kwargs):
+    def execute_operation(self, modality_type: ModalityType, operation: str, *args, **kwargs):
         """执行特定模态的特殊操作"""
         handler = self._get_handler(modality_type)
         if not hasattr(handler, operation):
