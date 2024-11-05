@@ -1,21 +1,14 @@
 import pytest
 import os
-import logging
 import base64
 
-from aiki.config.config import Config
 from aiki.indexer.indexer import APISummaryGenerator
 from aiki.modal.retrieval_data import RetrievalData, RetrievalItem, RetrievalType
 
-@pytest.fixture
-def config():
-    current_dir = os.path.dirname(__file__)
-    config_path = os.path.join(current_dir, '..', '..', 'aiki', 'config', 'config.yaml')
-    return Config(config_path)
 
 @pytest.fixture
-def api_summary_generator(config):
-    return APISummaryGenerator(config)
+def api_summary_generator():
+    return APISummaryGenerator()
 
 def test_generate_summary_with_text(api_summary_generator):
     retrieval_data = RetrievalData(

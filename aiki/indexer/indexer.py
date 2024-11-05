@@ -8,7 +8,75 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
-from aiki.modal.retrieval_data import RetrievalData, RetrievalType
+from aiki.modal.retrieval_data import RetrievalData, RetrievalItem, RetrievalType
+
+import os
+
+# 多模态数据生成文本摘要
+class BaseSummaryGenerator(ABC):
+    def __init__(self, model_path):
+        self.model_path = model_path
+        
+    def generate_summary(self, data: RetrievalItem):
+        ...
+        
+class ModelSummaryGenerator(BaseSummaryGenerator):
+    def __init__(self, model_path):
+        super().__init__(model_path)
+        self.model = self.load_model(self.model_path) 
+    
+    def load_model(self, model_path):
+        # load tokenizer and model
+        ...
+        
+    def generate_summary(self, data: RetrievalItem):
+        ...
+
+class APISummaryGenerator(BaseSummaryGenerator):
+    def __init__(self):
+        current_dir = os.path.dirname(__file__)
+        config_path = os.path.join(current_dir, '..', '..', 'aiki', 'config', 'config.yaml')
+        config = Config(config_path)
+        
+        super().__init__(config.get('model_path', 'default_model_path'))
+        self.client = OpenAI(
+            base_url=config.get('base_url', "https://api.claudeshop.top/v1")
+        )
+        self.model = config.get('model', "gpt-4o-mini")
+        
+    def generate_summary(self, data: RetrievalItem) -> str:
+        item = data
+        if item.type not in [RetrievalType.IMAGE, RetrievalType.TEXT]:
+            raise ValueError(f"{self.__class__.__name__}.genearte_summary(). There is no such modal data processing method")
+        
+        content_type = "image_url" if item.type == RetrievalType.IMAGE else "text"
+        content_value = {
+            "url": f"data:image/jpeg;base64,{item.content}"
+        } if item.type == RetrievalType.IMAGE else item.content
+        
+        prompt_text = "What is in this image?" if item.type == RetrievalType.IMAGE else "Please summarize this text."
+        
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt_text,
+                        },
+                        {
+                            "type": content_type,
+                            content_type: content_value,
+                        },
+                    ],
+                }
+            ],
+        )
+        summary = response.choices[0].message.content
+
+        return summary
 
 class BaseIndexer(ABC):
     def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker()):
@@ -24,7 +92,7 @@ class TextIndexer(BaseIndexer):
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
             if retreval_data.type != RetrievalType.TEXT:
-                raise ValueError(f"Unsupported data type: {retreval_data.type}")
+                raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
             id = ObjectId()
             dataSchema = KVSchema(
                 _id=id,
@@ -50,86 +118,55 @@ class TextIndexer(BaseIndexer):
                 )
                 self.sourcedb.create(dataSchema)
                 self.vectordb.upsert(docs=[data], ids=[str(cur_id)])
+                
+class ImageIndexer(BaseIndexer):
+    def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
+        super().__init__(model_path, sourcedb, vectordb, chunker)
+        self.summary_generator = summary_generator
+        
+    def index(self, data: RetrievalData):
+        for retreval_data in data.items:
+            if retreval_data.type != RetrievalType.IMAGE:
+                raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
+            id = ObjectId()
+            dataSchema = KVSchema(
+                _id=id,
+                modality="image",
+                summary=self.summary_generator.generate_summary(),
+                source_encoded_data=retreval_data.content,
+                inserted_timestamp=datetime.now(),
+                parent=[],
+                children=[]
+            )
+            self.sourcedb.create(dataSchema)
+            self.vectordb.upsert(docs=[dataSchema['summary']], ids=[str(id)])
         
 class MultimodalIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker()):
+    def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
         super().__init__(model_path, sourcedb, vectordb)
         self.text_indexer = TextIndexer(model_path, sourcedb, vectordb, chunker)
+        self.image_indexer = ImageIndexer(model_path, sourcedb, vectordb, chunker, summary_generator)
     
-    def index(self, data):
-        if data.type == RetrievalType.TEXT:
-            self.text_indexer.index(data)
-        elif data.type == RetrievalType.IMAGE:
-            pass
-        else:
-            raise ValueError(f"Unsupported data type: {data.type}")
-
+    def index(self, data: RetrievalData):
+        text_retrieval_data = RetrievalData(items=[])
+        image_retrieval_data = RetrievalData(items=[])
+        # slice data with type
+        for retrieval_data in data.items:
+            if retrieval_data.type == RetrievalType.TEXT:
+                text_retrieval_data.items.append(
+                    retrieval_data
+                )
+            elif retrieval_data.type == RetrievalType.IMAGE:
+                image_retrieval_data.items.append(
+                    retrieval_data
+                )
+            else:
+                raise ValueError(f"Unsupported data type: {retrieval_data.type}")
+        self.text_indexer.index(text_retrieval_data)
+        self.image_indexer.index(image_retrieval_data)
+        
 class KnowledgeGraphIndexer(BaseIndexer):
     ...
-    
-
-# 多模态数据生成文本摘要
-class BaseSummaryGenerator(ABC):
-    def __init__(self, model_path):
-        self.model_path = model_path
-        
-    def generate_summary(self, data: RetrievalData):
-        ...
-        
-class ModelSummaryGenerator(BaseSummaryGenerator):
-    def __init__(self, model_path):
-        super().__init__(model_path)
-        self.model = self.load_model(self.model_path) 
-    
-    def load_model(self, model_path):
-        # load tokenizer and model
-        ...
-        
-    def generate_summary(self, data: RetrievalData):
-        ...
-
-class APISummaryGenerator(BaseSummaryGenerator):
-    def __init__(self, config: Config):
-        super().__init__(config.get('model_path', 'default_model_path'))
-        self.client = OpenAI(
-            base_url=config.get('base_url', "https://api.claudeshop.top/v1")
-        )
-        self.model = config.get('model', "gpt-4o-mini")
-        
-    def generate_summary(self, data: RetrievalData) -> List[str]:
-        summaries = []
-        for item in data.items:
-            if item.type not in [RetrievalType.IMAGE, RetrievalType.TEXT]:
-                continue
-            
-            content_type = "image_url" if item.type == RetrievalType.IMAGE else "text"
-            content_value = {
-                "url": f"data:image/jpeg;base64,{item.content}"
-            } if item.type == RetrievalType.IMAGE else item.content
-            
-            prompt_text = "What is in this image?" if item.type == RetrievalType.IMAGE else "Please summarize this text."
-            
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": prompt_text,
-                            },
-                            {
-                                "type": content_type,
-                                content_type: content_value,
-                            },
-                        ],
-                    }
-                ],
-            )
-            summary = response.choices[0].message.content
-            summaries.append(summary)
-        return summaries
     
 # Example usage
 if __name__ == "__main__":
