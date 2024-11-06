@@ -18,6 +18,10 @@ def test_processor_text():
 
     assert  mget_result[0].text == "hello"
 
+    mget_result = processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MGET, ["1", "2", "1"])
+
+    assert len(mget_result) == 3 and mget_result[1] is None
+
     processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id="1",
                                                                          modality=ModalityType.TEXT,
                                                                          text="hello_again")])
