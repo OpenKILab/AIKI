@@ -1,14 +1,16 @@
 from aiki.multimodal.base import (ModalityType,
-                                  BaseModality, BaseModalityHandler,
+                                  BaseModalityData, BaseModalityHandler, BaseModalityHandlerOP,
                                   MultiModalProcessor)
 
-from aiki.multimodal.text import (TextModality, TextHandler)
+from aiki.multimodal.text import (TextModalityData, TextHandler, TextHandlerOP)
 
 __all__ = [
     "ModalityType",
-    "BaseModality",
+    "BaseModalityData",
     "BaseModalityHandler",
+    "BaseModalityHandlerOP",
     "MultiModalProcessor",
-    "TextModality",
+    "TextModalityData",
     "TextHandler",
+    "TextHandlerOP",
 ]

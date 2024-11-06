@@ -1,4 +1,4 @@
-from aiki.multimodal import BaseModality
+from aiki.multimodal import BaseModalityData
 
 from abc import ABC, abstractmethod
 from bson import ObjectId
@@ -27,7 +27,7 @@ class BaseKVDatabase(BaseDatabase):
         pass
 
     @abstractmethod
-    def mset(self, data_list: List[BaseModality]):
+    def mset(self, data_list: List[BaseModalityData]):
         pass
 
     @abstractmethod

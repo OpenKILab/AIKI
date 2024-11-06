@@ -1,37 +1,29 @@
-from aiki.multimodal.base import BaseModality, BaseModalityHandler, ModalityType
+from dataclasses import dataclass
+from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, ModalityType, BaseModalityHandlerOP, Serializable
 from aiki.database import BaseKVDatabase
 
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional
 from bson import ObjectId
+from enum import Enum
 
+class TextHandlerOP(BaseModalityHandlerOP):
+    MSET = "mset"
+    MGET = "mget"
+    MDELETE = "mdelete"
 
-class TextModality(BaseModality):
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            '_id': str(self._id),  # 将 ObjectId 转换为字符串
-            'modality': self.modality.value,
-            'text': self.text,
-            'metadata': self.metadata,
-        }
-
-    def __init__(self,
-                 _id: Union[ObjectId, str],
-                 modality: ModalityType,
-                 text: str,
-                 metadata: Optional[Dict[str, Any]] = None):
-        super().__init__(_id, modality, metadata)
-        self.text = text
-
+@dataclass()
+class TextModalityData(BaseModalityData):
+    text: str = ""
 
 class TextHandler(BaseModalityHandler):
     def __init__(self, database: BaseKVDatabase):
         super().__init__(database)
 
 
-    def mget(self, ids: List[ObjectId]) -> List[TextModality]:
+    def mget(self, ids: List[ObjectId]) -> List[TextModalityData]:
         return self.database.mget(ids)
 
-    def mset(self, data_list: List[BaseModality]):
+    def mset(self, data_list: List[BaseModalityData]):
         self.database.mset(data_list)
 
     def mdelete(self, ids):
