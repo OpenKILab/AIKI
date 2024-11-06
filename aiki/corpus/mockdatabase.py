@@ -84,6 +84,7 @@ class JSONFileConnection(DatabaseConnection):
         base_path = os.getcwd()
         path = os.path.join(base_path, "aiki", "corpus", "db", file_name)
         self.file_path = path
+        print(self.file_path)
         self._load_data()
 
     def _load_data(self):
@@ -164,6 +165,7 @@ class ChromaConnection(DatabaseConnection):
     def __init__(self, index_file):
         base_path = os.getcwd()
         path = os.path.join(base_path, "aiki", "corpus", "db", index_file)
+        print(f"chroma {path}")
         self.chroma_client = chromadb.PersistentClient(path=path) 
         self.collection = self.chroma_client.get_or_create_collection(name=index_file)
 
