@@ -21,7 +21,7 @@ class JSONFileDB(BaseKVDatabase):
     def mset(self, data_list: List[BaseModalityData]):
         file_data = self._read_file()
         for data in data_list:
-            file_data[data._id] = data
+            file_data[str(data._id)] = data
         self._write_file(file_data)
 
     def mget(self, ids: List[ObjectId]):
