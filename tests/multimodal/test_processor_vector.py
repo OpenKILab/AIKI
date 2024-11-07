@@ -30,6 +30,6 @@ def test_processor_vector():
     query_result = processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, ["test"])
 
     print(query_result)
-    assert len(query_result) == 2 and isinstance(query_result[0], ObjectId)
+    assert len(query_result[0]) == 2 and isinstance(query_result[0][0], ObjectId)
 
 test_processor_vector()
