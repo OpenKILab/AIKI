@@ -1,7 +1,5 @@
-import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional, Type
 from bson import ObjectId
 from enum import Enum
@@ -12,11 +10,13 @@ class ModalityType(Enum):
     TEXT = "text"
     IMAGE = "image"
     VECTOR = "vector"
+    UNKNOWN = "unknown"
 
 @dataclass()
 class BaseModalityData(Serializable):
     _id: ObjectId
-    modality: ModalityType
+    modality: ModalityType = ModalityType.UNKNOWN
+    content: Any = None
     metadata: Optional[Dict[str, SerializableValue]] = None
 
 class BaseModalityHandler(ABC):
