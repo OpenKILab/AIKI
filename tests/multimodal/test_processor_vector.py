@@ -1,24 +1,25 @@
 from bson import ObjectId
+from sympy import andre
 
 from aiki.multimodal import VectorModalityData, VectorHandler, VectorHandlerOP, MultiModalProcessor, ModalityType
 
 from aiki.database.chroma import ChromaDB
 
 import numpy as np
-
-def fake_embedding_func(x, size=2):
-    return np.random.rand(size).astype(np.float32)
-
-def cosine_similarity(vec1, vec2):
-    dot_product = np.dot(vec1, vec2)
-    norm_vec1 = np.linalg.norm(vec1)
-    norm_vec2 = np.linalg.norm(vec2)
-    return dot_product / (norm_vec1 * norm_vec2)
+from unittest.mock import MagicMock
 
 def test_processor_vector():
     processor = MultiModalProcessor()
-    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=ChromaDB(), embedding_func=fake_embedding_func))
+    mock_embedding_func = MagicMock()
+    fake_embeddings = [np.array([1, 0]).astype(np.float32),
+     np.array([0, 1]).astype(np.float32),
+     np.array([-1, 0]).astype(np.float32),
+     np.array([0, -1]).astype(np.float32),
+    np.array([0.5, 0.866]).astype(np.float32)]
+    mock_embedding_func.side_effect = fake_embeddings
+    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=ChromaDB(), embedding_func=mock_embedding_func))
 
+    # Test upsert
     _id1 = ObjectId()
     _id2 = ObjectId()
     processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id1], ["hello"])
@@ -26,10 +27,19 @@ def test_processor_vector():
     mget_result = processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MGET, [_id1, _id2])
 
     assert  len(mget_result) == 2 and isinstance(mget_result[0], VectorModalityData)
-    print(mget_result)
+
+    assert ((mget_result[0].content == fake_embeddings[0]).all()) and ((mget_result[1].content == fake_embeddings[1]).all())
+    # Test query
+
+    _id3 = ObjectId()
+    _id4 = ObjectId()
+    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id3], ["hello_again_and_again"])
+    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id4], ["hello_the_fourth_time"])
+
     query_result = processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, ["test"])
 
-    print(query_result)
-    assert len(query_result[0]) == 2 and isinstance(query_result[0][0], ObjectId)
+    # 简单的测试向量余弦相似度
+    assert query_result[0][0] == _id2 and query_result[0][1] == _id1 and query_result[0][2] == _id3 and query_result[0][3] == _id4
+
 
 test_processor_vector()
