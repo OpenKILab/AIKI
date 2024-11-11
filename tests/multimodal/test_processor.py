@@ -37,5 +37,3 @@ def test_processor_text():
     mget_result = processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MGET, [_id])
 
     assert mget_result[0] is None
-
-test_processor_text()

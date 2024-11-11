@@ -25,5 +25,3 @@ def test_processor_image():
         mget_result = processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MGET, [_id])
 
         assert mget_result[0].content == encoded_data
-
-test_processor_image()
