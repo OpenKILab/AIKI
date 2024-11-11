@@ -12,6 +12,7 @@ SERIALIZABLE_LIST = {
     "ModalityType": ("aiki", "multimodal", "ModalityType"),
     "BaseModalityData": ("aiki", "multimodal", "BaseModalityData"),
     "TextModalityData": ("aiki", "multimodal", "TextModalityData"),
+    "ImageModalityData": ("aiki", "multimodal", "ImageModalityData"),
 }
 
 SerializableValue = Union[

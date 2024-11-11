@@ -40,6 +40,3 @@ def test_processor_vector():
 
     # 简单的测试向量余弦相似度
     assert query_result[0][0] == _id2 and query_result[0][1] == _id1 and query_result[0][2] == _id3 and query_result[0][3] == _id4
-
-
-test_processor_vector()
