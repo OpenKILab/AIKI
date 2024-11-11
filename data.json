@@ -1,0 +1,418 @@
+{
+    "6731c542e1df6b4caa1a6e8d": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c542e1df6b4caa1a6e8d"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c542e1df6b4caa1a6e8d\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T16:50:10.356005\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c542e1df6b4caa1a6e8e": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c542e1df6b4caa1a6e8e"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c542e1df6b4caa1a6e8e\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T16:50:10.357209\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731c542e1df6b4caa1a6e8d\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c76c6eca17a4786ac5a0": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c76c6eca17a4786ac5a0"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c76c6eca17a4786ac5a0\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T16:59:24.990450\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c76c6eca17a4786ac5a1": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c76c6eca17a4786ac5a1"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c76c6eca17a4786ac5a1\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T16:59:24.992665\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731c76c6eca17a4786ac5a0\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c7e18077ab99a8d10402": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c7e18077ab99a8d10402"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c7e18077ab99a8d10402\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:01:21.594161\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c7e18077ab99a8d10403": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c7e18077ab99a8d10403"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c7e18077ab99a8d10403\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:01:21.597421\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731c7e18077ab99a8d10402\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c82e41a9a82ea0e6017e": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c82e41a9a82ea0e6017e"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c82e41a9a82ea0e6017e\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:02:38.147678\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731c82e41a9a82ea0e6017f": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731c82e41a9a82ea0e6017f"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731c82e41a9a82ea0e6017f\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:02:38.158097\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731c82e41a9a82ea0e6017e\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca004132c11fa13d9789": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca004132c11fa13d9789"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca004132c11fa13d9789\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:10:24.373647\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca004132c11fa13d978a": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca004132c11fa13d978a"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca004132c11fa13d978a\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:10:24.378966\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731ca004132c11fa13d9789\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca210546fb44253589a2": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca210546fb44253589a2"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca210546fb44253589a2\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:10:57.272346\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca210546fb44253589a3": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca210546fb44253589a3"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca210546fb44253589a3\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:10:57.275780\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731ca210546fb44253589a2\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca320e2ae44ed1bb9c65": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca320e2ae44ed1bb9c65"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca320e2ae44ed1bb9c65\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:11:14.713733\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca320e2ae44ed1bb9c66": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca320e2ae44ed1bb9c66"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca320e2ae44ed1bb9c66\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:11:14.717466\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731ca320e2ae44ed1bb9c65\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca4f533259072fe0c48c": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca4f533259072fe0c48c"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca4f533259072fe0c48c\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:11:43.917780\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731ca4f533259072fe0c48d": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731ca4f533259072fe0c48d"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731ca4f533259072fe0c48d\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:11:43.919973\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731ca4f533259072fe0c48c\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cb8d673e9704a8fb0746": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cb8d673e9704a8fb0746"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cb8d673e9704a8fb0746\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:17:01.331560\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cb8d673e9704a8fb0747": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cb8d673e9704a8fb0747"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cb8d673e9704a8fb0747\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:17:01.334238\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731cb8d673e9704a8fb0746\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cbb259f67bee4e3b10d7": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cbb259f67bee4e3b10d7"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cbb259f67bee4e3b10d7\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:17:38.790910\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cbb259f67bee4e3b10d8": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cbb259f67bee4e3b10d8"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cbb259f67bee4e3b10d8\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:17:38.792862\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731cbb259f67bee4e3b10d7\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cbd297ac02e005bf95b9": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cbd297ac02e005bf95b9"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cbd297ac02e005bf95b9\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:18:10.817862\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cbd297ac02e005bf95ba": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cbd297ac02e005bf95ba"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cbd297ac02e005bf95ba\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:18:10.819420\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731cbd297ac02e005bf95b9\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cc833dcd20a5aaef5f33": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cc833dcd20a5aaef5f33"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cc833dcd20a5aaef5f33\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:21:07.299342\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cc833dcd20a5aaef5f34": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cc833dcd20a5aaef5f34"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cc833dcd20a5aaef5f34\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:21:07.302192\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731cc833dcd20a5aaef5f33\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cdb501c6214388956fcb": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cdb501c6214388956fcb"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cdb501c6214388956fcb\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:26:13.743052\"}, \"parent\": [], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    },
+    "6731cdb501c6214388956fcc": {
+        "__type__": "TextModalityData",
+        "__data__": {
+            "_id": {
+                "__type__": "ObjectId",
+                "__data__": "6731cdb501c6214388956fcc"
+            },
+            "modality": {
+                "__type__": "Enum",
+                "__enum__": "ModalityType",
+                "__data__": "text"
+            },
+            "content": "{\"__type__\": \"KVSchema\", \"__data__\": {\"_id\": {\"__type__\": \"ObjectId\", \"__data__\": \"6731cdb501c6214388956fcc\"}, \"modality\": \"text\", \"summary\": \"\", \"source_encoded_data\": \"MARLEY'S GHOST\\n\\n\\nMarley was dead, to begin with. There is no doubt whatever about that.\\nThe register of his burial was signed by the clergyman, the clerk, the\\nundertaker, and the chief mourner. Scrooge signed it. And Scrooge's name\\nwas good upon 'Change for anything he chose to put his hand to. Old\\nMarley was as dead as a door-nail.\", \"inserted_timestamp\": {\"__type__\": \"datetime\", \"__data__\": \"2024-11-11T17:26:13.746344\"}, \"parent\": [{\"__type__\": \"ObjectId\", \"__data__\": \"6731cdb501c6214388956fcb\"}], \"children\": [], \"tensor\": []}}",
+            "metadata": null
+        }
+    }
+}

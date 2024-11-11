@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, BaseModalityHandlerOP, ModalityType
-from aiki.database import BaseVectorDatabase
+# from aiki.database import BaseVectorDatabase
 
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional, Callable
 from bson import ObjectId
@@ -20,7 +20,7 @@ class VectorModalityData(BaseModalityData):
     content: Vector = None
 
 class VectorHandler(BaseModalityHandler):
-    def __init__(self, database: BaseVectorDatabase, embedding_func: Optional[Callable[[Any], Any]] = None):
+    def __init__(self, database: "BaseVectorDatabase", embedding_func: Optional[Callable[[Any], Any]] = None):
         super().__init__(database)
         self.embedding_func = embedding_func
 
@@ -46,7 +46,7 @@ class VectorHandler(BaseModalityHandler):
 
     def upsert(self, ids: List[ObjectId], data: List[Any], metadata: List[Dict[str,Any]] = None):
         vector_data = [
-            VectorModalityData(_id=_id, content=self.embedding_func(item), metadata=metadata)
+            VectorModalityData(_id=_id, content=self.embedding_func([item]), metadata=metadata)
             for _id, item in zip(ids, data)
         ]
         self.mset(vector_data)

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from dataclasses import asdict, dataclass, field
 import json
 import os
 import chromadb
@@ -7,6 +8,8 @@ from bson import ObjectId
 from datetime import datetime
 import numpy as np
 from numpy._typing import NDArray
+
+from aiki.serialization.base import Serializable
 
 ModalityType = Literal["image", "video", "text", "audio"]
 
@@ -21,16 +24,16 @@ PyEmbeddings = List[PyEmbedding]
 Embedding = Vector
 Embeddings = List[Embedding]
 
-
-class KVSchema(TypedDict):
-    _id: ObjectId # type: ignore
+@dataclass
+class KVSchema(Serializable):
+    _id: ObjectId
     modality: ModalityType
     summary: str
     source_encoded_data: str  # Base64 encoded data
     inserted_timestamp: datetime
-    parent: List[ObjectId]
-    children: List[ObjectId]
-    tensor: List[bool]
+    parent: List[ObjectId] = field(default_factory=list)
+    children: List[ObjectId] = field(default_factory=list)
+    tensor: List[bool] = field(default_factory=list)
     
 class VectorSchema(TypedDict):
     _id: ObjectId
@@ -191,3 +194,20 @@ class ChromaConnection(DatabaseConnection):
             documents=docs,
             ids=ids
         )
+        
+if __name__ == "__main__":
+    kvs = KVSchema(
+        _id = ObjectId(),
+        modality = "text",
+        summary = "abc",
+        source_encoded_data= "text",
+        inserted_timestamp= datetime.now(),
+        parent=[],
+        children=[],
+        tensor=[],
+    )
+    kvs_dict = kvs.to_dict()
+    print(kvs_dict)
+    kvs_json = kvs.to_json()
+    print(kvs_json)
+    kvs_cls = KVSchema.from_json(kvs.to_json())

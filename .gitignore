@@ -135,4 +135,7 @@ dmypy.json
 
 *.sqlite3
 
-/db
+db/
+result/
+mmdu/
+videos/
