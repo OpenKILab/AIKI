@@ -2,7 +2,7 @@ import base64
 from typing import List
 from openai import OpenAI
 from aiki.config.config import Config
-from aiki.corpus.mockdatabase import DatabaseConnectionFactory, DatabaseConnection, KVSchema
+from aiki.corpus.mockdatabase import DatabaseConnection, KVSchema
 from bson import ObjectId
 from datetime import datetime
 from abc import ABC, abstractmethod
