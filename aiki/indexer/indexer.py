@@ -2,7 +2,6 @@ import base64
 from typing import List
 from openai import OpenAI
 from aiki.config.config import Config
-from aiki.corpus.mockdatabase import DatabaseConnection, KVSchema
 from bson import ObjectId
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -11,7 +10,7 @@ from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
-from aiki.modal.retrieval_data import RetrievalData, RetrievalItem, RetrievalType
+from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 
 import os
 
@@ -159,7 +158,7 @@ class ImageIndexer(BaseIndexer):
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [id], [dataSchema.summary])
         
 class MultimodalIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
+    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
         super().__init__(model_path, sourcedb, vectordb)
         self.text_indexer = TextIndexer(model_path, sourcedb, vectordb, chunker)
         self.image_indexer = ImageIndexer(model_path, sourcedb, vectordb, chunker, summary_generator)
