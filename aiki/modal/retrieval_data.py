@@ -1,6 +1,12 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import List, Dict, Any
 from enum import Enum
+
+from bson import ObjectId
+
+from aiki.multimodal.base import ModalityType
+from aiki.serialization.base import Serializable
 
 class RetrievalType(Enum):
     TEXT = "text"
@@ -27,3 +33,15 @@ query = RetrievalData(items=[
         content="base64_encoded_data",
     )
 ])
+
+@dataclass
+class KVSchema(Serializable):
+    _id: ObjectId
+    modality: ModalityType
+    summary: str
+    source_encoded_data: str
+    inserted_timestamp: datetime
+    parent: List[ObjectId] = field(default_factory=list)
+    children: List[ObjectId] = field(default_factory=list)
+    tensor: List[bool] = field(default_factory=list)
+    
