@@ -6,18 +6,22 @@ from aiki.multimodal.text import (TextModalityData, TextHandler, TextHandlerOP)
 
 from aiki.multimodal.vector import (VectorModalityData, VectorHandler, VectorHandlerOP)
 
-from aiki.multimodal.types import Vector
+from aiki.multimodal.image import (ImageModalityData, ImageHandler, ImageHandlerOP)
+
 
 __all__ = [
+    "MultiModalProcessor",
     "ModalityType",
     "BaseModalityData",
     "BaseModalityHandler",
     "BaseModalityHandlerOP",
-    "MultiModalProcessor",
     "TextModalityData",
     "TextHandler",
     "TextHandlerOP",
     "VectorModalityData",
     "VectorHandler",
-    "VectorHandlerOP"
+    "VectorHandlerOP",
+    "ImageModalityData",
+    "ImageHandler",
+    "ImageHandlerOP"
 ]
