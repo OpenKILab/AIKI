@@ -1,7 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Protocol
 from aiki.corpus.mockdatabase import DatabaseConnectionFactory
+from aiki.database.base import BaseKVDatabase, BaseVectorDatabase
+from aiki.database.chroma import ChromaDB
+from aiki.database.json_file import JSONFileDB
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType, RetrievalItem
+from aiki.multimodal.base import ModalityType, MultiModalProcessor
+from aiki.multimodal.text import TextHandler
+from aiki.multimodal.vector import VectorHandler, VectorHandlerOP
+from chromadb.utils import embedding_functions
 
 class DataPool:
     def __init__(self):
@@ -37,16 +44,29 @@ class BaseRetriever(ABC):
         self.data_pool = DataPool()
         self.preretriever_components = []
         self.postretriever_components = []
+        self.processor = MultiModalProcessor()
         
         self.load_config()
     
     def load_config(self):
-        for db_config in self.config.get("databases", []):
-            db_type = db_config.get("type")
-            db_args = db_config.get("args")
-            if db_type:
-                connection = DatabaseConnectionFactory.create_connection(db_type=db_type, **db_args)
-                self.database[db_type] = connection
+        self.database = {db_config['type']: self.create_database(db_config) for db_config in self.config['databases']}
+        for db_type, db_instance in self.database.items():
+            if isinstance(db_instance, BaseKVDatabase):
+                self.processor.register_handler(ModalityType.TEXT, TextHandler(database=db_instance))
+            elif isinstance(db_instance, BaseVectorDatabase):
+                self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=db_instance, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+    
+    
+    def create_database(self, db_config):
+        db_type = db_config['type']
+        db_args = db_config['args']
+        
+        if db_type == "json_file":
+            return JSONFileDB(**db_args)
+        elif db_type == "chroma":
+            return ChromaDB(**db_args)
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
 
     def pre_retrieve(self, query: RetrievalData):
         for component in self.preretriever_components:
@@ -78,11 +98,10 @@ class DenseRetriever(BaseRetriever):
     def __init__(self, config):
         super().__init__(config)
         
-    def _search(self, query: RetrievalData, num: int = 4) -> RetrievalData:
+    def _search(self, query: RetrievalData, num: int = 4):
         queries = [q.content for q in query.items if q.type == RetrievalType.TEXT]
-        results = self.database['chroma'].query(queries, n_results = num)
-        return None
-    
+        result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries)
+
     def search(self, query: RetrievalData, num: int = 4) -> RetrievalData:
         results = self._search(query, num)
         return results
@@ -94,13 +113,14 @@ if __name__ == "__main__":
                 {
                     "type": "json_file",
                     "args": {
-                        "file_name": "json_file",
+                        "file_path": "./aiki/corpus/db/data.json",
                     }
                 },
                 {
                     "type": "chroma",
                     "args": {
-                        "index_file": "chroma_index",
+                        "collection_name": "text_index",
+                        "persist_directory": "./aiki/corpus/db/test_index",
                     }
                 }
             ]
