@@ -1,6 +1,7 @@
 from aiki.database import BaseKVDatabase
 from aiki.database.base import BaseVectorDatabase
-from aiki.multimodal import VectorModalityData, BaseModalityData, Vector
+from aiki.multimodal import VectorModalityData, BaseModalityData
+from aiki.multimodal.types import Vector
 from aiki.serialization import JsonEncoder, JsonDecoder
 from aiki.multimodal import ModalityType
 import os

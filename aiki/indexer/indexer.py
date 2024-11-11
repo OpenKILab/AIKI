@@ -1,3 +1,4 @@
+import base64
 from typing import List
 from openai import OpenAI
 from aiki.config.config import Config
@@ -16,6 +17,8 @@ import os
 
 from aiki.multimodal import ModalityType, MultiModalProcessor, TextHandler, TextHandlerOP, TextModalityData, VectorHandler, VectorHandlerOP
 from chromadb.utils import embedding_functions
+
+from aiki.multimodal.image import ImageHandlerOP, ImageModalityData
 
 # 多模态数据生成文本摘要
 class BaseSummaryGenerator(ABC):
@@ -80,7 +83,6 @@ class APISummaryGenerator(BaseSummaryGenerator):
             ],
         )
         summary = response.choices[0].message.content
-
         return summary
 
 class BaseIndexer(ABC):
@@ -136,7 +138,7 @@ class ImageIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
         super().__init__(model_path, sourcedb, vectordb, chunker)
         self.summary_generator = summary_generator
-        self.processor.register_handler(ModalityType.TEXT, TextHandler(database=self.sourcedb))
+        self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=self.sourcedb))
         self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
         
     def index(self, data: RetrievalData):
@@ -147,14 +149,14 @@ class ImageIndexer(BaseIndexer):
             dataSchema = KVSchema(
                 _id=id,
                 modality="image",
-                summary=self.summary_generator.generate_summary(),
+                summary=self.summary_generator.generate_summary(retreval_data),
                 source_encoded_data=retreval_data.content,
                 inserted_timestamp=datetime.now(),
                 parent=[],
                 children=[]
             )
-            self.sourcedb.create(dataSchema)
-            self.vectordb.upsert(docs=[dataSchema['summary']], ids=[str(id)])
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=dataSchema.to_json())])
+            self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [id], [dataSchema.summary])
         
 class MultimodalIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: DatabaseConnection, vectordb: DatabaseConnection, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
@@ -183,24 +185,28 @@ class MultimodalIndexer(BaseIndexer):
 class KnowledgeGraphIndexer(BaseIndexer):
     ...
     
+def encode_image_to_base64(file_path: str) -> str:
+    with open(file_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+    return encoded_string
+
 # Example usage
 if __name__ == "__main__":
     source_db = JSONFileDB("./aiki/corpus/db/data.json")
     
     chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
 
-    text_indexer = TextIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
+    text_indexer = MultimodalIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
+    
+    base_path = os.getcwd()
 
+    print("Current file path:", base_path)
+    file_path = f"{base_path}/aiki/resource/source/imgs/外滩小巷.jpg"
+    encoded_image = encode_image_to_base64(file_path)
+    
     retrieval_data = RetrievalData(
         items=[
-            RetrievalItem(type= RetrievalType.TEXT, content= f"""MARLEY'S GHOST
-
-
-Marley was dead, to begin with. There is no doubt whatever about that.
-The register of his burial was signed by the clergyman, the clerk, the
-undertaker, and the chief mourner. Scrooge signed it. And Scrooge's name
-was good upon 'Change for anything he chose to put his hand to. Old
-Marley was as dead as a door-nail.""")
+            RetrievalItem(type= RetrievalType.IMAGE, content= f"""{encoded_image}""")
         ]
     )
 
