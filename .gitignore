@@ -130,3 +130,12 @@ dmypy.json
 
 # templates
 .github/templates/*
+
+*.bin
+
+*.sqlite3
+
+db/
+result/
+mmdu/
+videos/

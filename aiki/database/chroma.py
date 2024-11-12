@@ -1,7 +1,7 @@
 from aiki.database import BaseKVDatabase
 from aiki.database.base import BaseVectorDatabase
 from aiki.multimodal import VectorModalityData, BaseModalityData
-from  aiki.multimodal.types import Vector
+from aiki.multimodal.types import Vector
 from aiki.serialization import JsonEncoder, JsonDecoder
 from aiki.multimodal import ModalityType
 import os
@@ -58,7 +58,7 @@ class ChromaDB(BaseVectorDatabase):
     def mset(self, data_list: List[VectorModalityData]):
         self._collection.add(
             ids=[str(data._id) for data in data_list],
-            embeddings=[data.content for data in data_list],
+            embeddings=[data.content[0] for data in data_list],
             metadatas=[data.metadata for data in data_list]
         )
 

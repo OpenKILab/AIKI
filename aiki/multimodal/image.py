@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, ModalityType, BaseModalityHandlerOP
-from aiki.database import BaseKVDatabase
 
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional
 from bson import ObjectId
