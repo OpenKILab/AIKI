@@ -122,7 +122,7 @@ class TextIndexer(BaseIndexer):
                 parent=[],
                 children=[]
             )
-            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=dataSchema.to_json())])
+            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=dataSchema.to_json(), metadata={"__modality": ModalityType.TEXT})])
             # self.sourcedb.create(dataSchema)
             chunks = self.chunker.chunk(retreval_data.content)
             for data in chunks:
@@ -136,7 +136,7 @@ class TextIndexer(BaseIndexer):
                     parent=[id],
                     children=[]
                 )
-                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=dataSchema.to_json())])
+                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=dataSchema.to_json(), metadata={"__modality": ModalityType.TEXT})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
@@ -157,6 +157,7 @@ class ImageIndexer(BaseIndexer):
             if retreval_data.type != RetrievalType.IMAGE:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
             id = ObjectId()
+            print("image")
             dataSchema = KVSchema(
                 _id=id,
                 modality="image",
@@ -166,8 +167,9 @@ class ImageIndexer(BaseIndexer):
                 parent=[],
                 children=[]
             )
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=dataSchema.to_json())])
-            self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=id, content=dataSchema.summary)])
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=dataSchema.to_json(), metadata={"__modality": ModalityType.IMAGE})])
+            image_data = ImageModalityData(_id=id, _content=dataSchema.summary)
+            self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
@@ -178,7 +180,6 @@ class MultimodalIndexer(BaseIndexer):
     def index(self, data: RetrievalData):
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
-        # slice data with type
         for retrieval_data in data.items:
             if retrieval_data.type == RetrievalType.TEXT:
                 text_retrieval_data.items.append(

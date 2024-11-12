@@ -58,6 +58,7 @@ class BaseRetriever(ABC):
         for db_type, db_instance in self.database.items():
             if isinstance(db_instance, BaseKVDatabase):
                 self.processor.register_handler(ModalityType.TEXT, TextHandler(database=db_instance))
+                self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=db_instance))
             elif isinstance(db_instance, BaseVectorDatabase):
                 self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=db_instance, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     
@@ -106,16 +107,12 @@ class DenseRetriever(BaseRetriever):
         queries = [q.content for q in query.items if q.type == RetrievalType.TEXT]
         vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries)
         for item in vector_db_result:
-            print(item)
-            for _id in item:
-                print(_id)
-                ## TODO: 并不知道 ModalityType是 TEXT还是IMAGE，如果假定找出来是IMAGE 会error
-                self.data_pool.add("_search", self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MGET, [str(_id)]))
+            for (_id, modality_type) in item:
+                self.data_pool.add("_search", self.processor.execute_operation(modality_type, TextHandlerOP.MGET, [str(_id)]))
 
     def search(self, query: RetrievalData, num: int = 4) -> List[RetrievalData]:
         self._search(query, num)
         # return self.data_pool.get("_search")
-        # print(self.data_pool.pool)
         return []
         
 if __name__ == "__main__":
@@ -144,4 +141,5 @@ if __name__ == "__main__":
             type= RetrievalType.TEXT
         )
     ])
+    
     print(dense_retriever.search(retrieval_data))
