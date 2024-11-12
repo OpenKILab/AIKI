@@ -1,7 +1,8 @@
 from bson import ObjectId
 from sympy import andre
 
-from aiki.multimodal import VectorModalityData, VectorHandler, VectorHandlerOP, MultiModalProcessor, ModalityType
+from aiki.multimodal import VectorModalityData, VectorHandler, VectorHandlerOP, MultiModalProcessor, ModalityType, \
+    BaseModalityData, TextModalityData
 
 from aiki.database.chroma import ChromaDB
 
@@ -22,8 +23,8 @@ def test_processor_vector():
     # Test upsert
     _id1 = ObjectId()
     _id2 = ObjectId()
-    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id1], ["hello"])
-    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id2], ["hello_again"])
+    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=_id1, content="hello")])
+    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=_id2, content="hello_again")])
     mget_result = processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MGET, [_id1, _id2])
 
     assert  len(mget_result) == 2 and isinstance(mget_result[0], VectorModalityData)
@@ -33,10 +34,10 @@ def test_processor_vector():
 
     _id3 = ObjectId()
     _id4 = ObjectId()
-    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id3], ["hello_again_and_again"])
-    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [_id4], ["hello_the_fourth_time"])
+    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=_id3, content="hello_the_third_time")])
+    processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=_id4, content="hello_the_fourth_time")])
 
     query_result = processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, ["test"])
 
     # 简单的测试向量余弦相似度
-    assert query_result[0][0] == _id2 and query_result[0][1] == _id1 and query_result[0][2] == _id3 and query_result[0][3] == _id4
+    assert query_result[0][0][0] == _id2 and query_result[0][1][0] == _id1 and query_result[0][2][0] == _id3 and query_result[0][3][0] == _id4

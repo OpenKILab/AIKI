@@ -44,9 +44,14 @@ class VectorHandler(BaseModalityHandler):
                 query_embeddings = [self.embedding_func([data])[0] for data in query_data]
         return self.database.query(query_embeddings, top_k = top_k)
 
-    def upsert(self, ids: List[ObjectId], data: List[Any], metadata: List[Dict[str,Any]] = None):
-        vector_data = [
-            VectorModalityData(_id=_id, content=self.embedding_func([item]), metadata=metadata)
-            for _id, item in zip(ids, data)
-        ]
+    def upsert(self, data: List[BaseModalityData]):
+        vector_data = []
+        for item in data:
+            _id = item._id
+            content = self.embedding_func([item])
+            metadata = item.metadata or {}
+            metadata.update({"__modality": item.modality.value})
+            vector_data.append(
+                VectorModalityData(_id=_id, content=content, metadata=metadata)
+            )
         self.mset(vector_data)
