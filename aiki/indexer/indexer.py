@@ -131,7 +131,7 @@ class TextIndexer(BaseIndexer):
                     children=[]
                 )
                 self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=dataSchema.to_json())])
-                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [cur_id], [data])
+                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
@@ -155,8 +155,8 @@ class ImageIndexer(BaseIndexer):
                 children=[]
             )
             self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=dataSchema.to_json())])
-            self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [id], [dataSchema.summary])
-        
+            self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=id, content=dataSchema.summary)])
+
 class MultimodalIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
         super().__init__(model_path, sourcedb, vectordb)
