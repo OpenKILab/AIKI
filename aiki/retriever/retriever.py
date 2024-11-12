@@ -40,38 +40,15 @@ class RecallStrategy(Protocol):
         ...
 
 class BaseRetriever(ABC):
-    def __init__(self, config, preretriever_components: List[PreRetrieverComponent] = None, postretriever_components: List[PostRetrieverComponent] = None, recall_strategies: List[RecallStrategy] = None):
-        self.topk = config.get("retrieval_topk", 4)
+    def __init__(self, processor: MultiModalProcessor, preretriever_components: List[PreRetrieverComponent] = None, postretriever_components: List[PostRetrieverComponent] = None, recall_strategies: List[RecallStrategy] = None):
+        self.topk = 4
         self.recall_strategies = recall_strategies or []
-        self.config = config
         self.database = {}
         self.data_pool = DataPool()
         self.preretriever_components = []
         self.postretriever_components = []
-        self.processor = MultiModalProcessor()
+        self.processor = processor
         
-        self.load_config()
-    
-    def load_config(self):
-        self.database = {db_config['type']: self.create_database(db_config) for db_config in self.config['databases']}
-        for db_type, db_instance in self.database.items():
-            if isinstance(db_instance, BaseKVDatabase):
-                self.processor.register_handler(ModalityType.TEXT, TextHandler(database=db_instance))
-                self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=db_instance))
-            elif isinstance(db_instance, BaseVectorDatabase):
-                self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=db_instance, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
-    
-    def create_database(self, db_config):
-        db_type = db_config['type']
-        db_args = db_config['args']
-        
-        if db_type == "json_file":
-            return JSONFileDB(**db_args)
-        elif db_type == "chroma":
-            return ChromaDB(**db_args)
-        else:
-            raise ValueError(f"Unsupported database type: {db_type}")
-
     def pre_retrieve(self, query: RetrievalData):
         for component in self.preretriever_components:
             query = component.process(query)
@@ -99,8 +76,8 @@ class BaseRetriever(ABC):
 
     
 class DenseRetriever(BaseRetriever):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, processor):
+        super().__init__(processor)
         
     def _search(self, query: RetrievalData, num: int = 4):
         queries = [q.content for q in query.items if q.type == RetrievalType.TEXT]
@@ -114,25 +91,15 @@ class DenseRetriever(BaseRetriever):
         return self.data_pool.get("_search")
         
 if __name__ == "__main__":
-    config = {
-            "retrieval_topk": 2,
-            "databases": [
-                {
-                    "type": "json_file",
-                    "args": {
-                        "file_path": "./aiki/corpus/db/data.json",
-                    }
-                },
-                {
-                    "type": "chroma",
-                    "args": {
-                        "collection_name": "text_index",
-                        "persist_directory": "./aiki/corpus/db/test_index",
-                    }
-                }
-            ]
-        }
-    dense_retriever = DenseRetriever(config=config)
+    processor = MultiModalProcessor()
+    source_db = JSONFileDB("./aiki/corpus/db/data.json")
+    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
+
+    processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+    processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+    
+    dense_retriever = DenseRetriever(processor=processor)
     retrieval_data = RetrievalData(items=[
         RetrievalItem(
             content= "street",

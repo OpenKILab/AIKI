@@ -122,7 +122,7 @@ class TextIndexer(BaseIndexer):
                 parent=[],
                 children=[]
             )
-            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=dataSchema.to_json(), metadata={"__modality": ModalityType.TEXT})])
+            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=dataSchema.to_json())])
             # self.sourcedb.create(dataSchema)
             chunks = self.chunker.chunk(retreval_data.content)
             for data in chunks:
@@ -136,7 +136,7 @@ class TextIndexer(BaseIndexer):
                     parent=[id],
                     children=[]
                 )
-                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=dataSchema.to_json(), metadata={"__modality": ModalityType.TEXT})])
+                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=dataSchema.to_json())])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
@@ -167,7 +167,7 @@ class ImageIndexer(BaseIndexer):
                 parent=[],
                 children=[]
             )
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=dataSchema.to_json(), metadata={"__modality": ModalityType.IMAGE})])
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=dataSchema.to_json())])
             image_data = ImageModalityData(_id=id, _content=dataSchema.summary)
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
