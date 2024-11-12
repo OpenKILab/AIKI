@@ -112,6 +112,8 @@ class TextIndexer(BaseIndexer):
         for retreval_data in data.items:
             if retreval_data.type != RetrievalType.TEXT:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
+            '''
+            # parent data
             id = ObjectId()
             dataSchema = KVSchema(
                 _id=id,
@@ -122,21 +124,21 @@ class TextIndexer(BaseIndexer):
                 parent=[],
                 children=[]
             )
-            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=dataSchema.to_json())])
-            # self.sourcedb.create(dataSchema)
+            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=data)])
+            '''
             chunks = self.chunker.chunk(retreval_data.content)
             for data in chunks:
                 cur_id = ObjectId()
-                dataSchema = KVSchema(
-                    _id=cur_id,
-                    modality="text",
-                    summary="",
-                    source_encoded_data=data,
-                    inserted_timestamp=datetime.now(),
-                    parent=[id],
-                    children=[]
-                )
-                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=dataSchema.to_json())])
+                # dataSchema = KVSchema(
+                #     _id=cur_id,
+                #     modality="text",
+                #     summary="",
+                #     source_encoded_data=data,
+                #     inserted_timestamp=datetime.now(),
+                #     parent=[id],
+                #     children=[]
+                # )
+                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": datetime.now()})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
@@ -157,18 +159,18 @@ class ImageIndexer(BaseIndexer):
             if retreval_data.type != RetrievalType.IMAGE:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
             id = ObjectId()
-            print("image")
-            dataSchema = KVSchema(
-                _id=id,
-                modality="image",
-                summary=self.summary_generator.generate_summary(retreval_data),
-                source_encoded_data=retreval_data.content,
-                inserted_timestamp=datetime.now(),
-                parent=[],
-                children=[]
-            )
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=dataSchema.to_json())])
-            image_data = ImageModalityData(_id=id, _content=dataSchema.summary)
+            summary = self.summary_generator.generate_summary(retreval_data)
+            # dataSchema = KVSchema(
+            #     _id=id,
+            #     modality="image",
+            #     summary=summary,
+            #     source_encoded_data=retreval_data.content,
+            #     inserted_timestamp=datetime.now(),
+            #     parent=[],
+            #     children=[]
+            # )
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=retreval_data.content, metadata={"summary": summary, "timestamp": datetime.now(), "parent": [], "children": []})])
+            image_data = ImageModalityData(_id=id, _content=summary)
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
