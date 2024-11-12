@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Protocol
 
 from bson import ObjectId
-from aiki.corpus.mockdatabase import DatabaseConnectionFactory
 from aiki.database.base import BaseKVDatabase, BaseVectorDatabase
 from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
@@ -112,8 +111,7 @@ class DenseRetriever(BaseRetriever):
 
     def search(self, query: RetrievalData, num: int = 4) -> List[RetrievalData]:
         self._search(query, num)
-        # return self.data_pool.get("_search")
-        return []
+        return self.data_pool.get("_search")
         
 if __name__ == "__main__":
     config = {
@@ -137,7 +135,7 @@ if __name__ == "__main__":
     dense_retriever = DenseRetriever(config=config)
     retrieval_data = RetrievalData(items=[
         RetrievalItem(
-            content= "Marley",
+            content= "street",
             type= RetrievalType.TEXT
         )
     ])
