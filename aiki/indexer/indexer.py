@@ -85,22 +85,28 @@ class APISummaryGenerator(BaseSummaryGenerator):
         return summary
 
 class BaseIndexer(ABC):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker()):
+    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker()):
         self.model_path = model_path
         self.sourcedb = sourcedb  # Source database storage
         self.vectordb = vectordb  # Vector database storage
         self.chunker = chunker
         
-        self.processor = MultiModalProcessor()
+        self.processor = processor
         
     def index(self, data):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
 
 class TextIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker()):
-        super().__init__(model_path, sourcedb, vectordb, chunker)
-        self.processor.register_handler(ModalityType.TEXT, TextHandler(database=self.sourcedb))
-        self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+        super().__init__(model_path, sourcedb, vectordb, chunker=chunker)
+        try:
+            self.processor._get_handler(ModalityType.TEXT)
+        except ValueError:
+            self.processor.register_handler(ModalityType.TEXT, TextHandler(database=self.sourcedb))
+        try:
+            self.processor._get_handler(ModalityType.VECTOR)
+        except ValueError:
+            self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
         
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
@@ -135,10 +141,16 @@ class TextIndexer(BaseIndexer):
                 
 class ImageIndexer(BaseIndexer):
     def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
-        super().__init__(model_path, sourcedb, vectordb, chunker)
+        super().__init__(model_path, sourcedb, vectordb, chunker=chunker)
         self.summary_generator = summary_generator
-        self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=self.sourcedb))
-        self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+        try:
+            self.processor._get_handler(ModalityType.IMAGE)
+        except ValueError:
+            self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=self.sourcedb))
+        try:
+            self.processor._get_handler(ModalityType.VECTOR)
+        except ValueError:
+            self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
         
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
@@ -158,10 +170,10 @@ class ImageIndexer(BaseIndexer):
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=id, content=dataSchema.summary)])
 
 class MultimodalIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
+    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
         super().__init__(model_path, sourcedb, vectordb)
-        self.text_indexer = TextIndexer(model_path, sourcedb, vectordb, chunker)
-        self.image_indexer = ImageIndexer(model_path, sourcedb, vectordb, chunker, summary_generator)
+        self.text_indexer = TextIndexer(model_path, sourcedb, vectordb, chunker=chunker)
+        self.image_indexer = ImageIndexer(model_path, sourcedb, vectordb, chunker=chunker, summary_generator=summary_generator)
     
     def index(self, data: RetrievalData):
         text_retrieval_data = RetrievalData(items=[])
@@ -195,7 +207,7 @@ if __name__ == "__main__":
     
     chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
 
-    text_indexer = MultimodalIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
+    multimodal_indexer = MultimodalIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
     
     base_path = os.getcwd()
 
@@ -210,4 +222,4 @@ if __name__ == "__main__":
     )
 
     # Index the data
-    text_indexer.index(retrieval_data)
+    multimodal_indexer.index(retrieval_data)
