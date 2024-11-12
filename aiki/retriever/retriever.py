@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Protocol
+
+from bson import ObjectId
 from aiki.corpus.mockdatabase import DatabaseConnectionFactory
 from aiki.database.base import BaseKVDatabase, BaseVectorDatabase
 from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType, RetrievalItem
 from aiki.multimodal.base import ModalityType, MultiModalProcessor
-from aiki.multimodal.text import TextHandler
+from aiki.multimodal.text import TextHandler, TextHandlerOP, TextModalityData
 from aiki.multimodal.vector import VectorHandler, VectorHandlerOP
 from chromadb.utils import embedding_functions
 
@@ -15,9 +17,12 @@ class DataPool:
         self.pool = {}
 
     def add(self, component_name: str, data: RetrievalData):
-        self.pool[component_name] = data
+        if component_name not in self.pool:
+            self.pool[component_name] = []
+            
+        self.pool[component_name].append(data)
     
-    def get(self, component_name: str) -> RetrievalData:
+    def get(self, component_name: str) -> List[RetrievalData]:
         return self.pool.get(component_name, None)
 
 class PreRetrieverComponent(ABC):
@@ -55,7 +60,6 @@ class BaseRetriever(ABC):
                 self.processor.register_handler(ModalityType.TEXT, TextHandler(database=db_instance))
             elif isinstance(db_instance, BaseVectorDatabase):
                 self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=db_instance, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
-    
     
     def create_database(self, db_config):
         db_type = db_config['type']
@@ -100,11 +104,19 @@ class DenseRetriever(BaseRetriever):
         
     def _search(self, query: RetrievalData, num: int = 4):
         queries = [q.content for q in query.items if q.type == RetrievalType.TEXT]
-        result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries)
+        vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries)
+        for item in vector_db_result:
+            print(item)
+            for _id in item:
+                print(_id)
+                ## TODO: 并不知道 ModalityType是 TEXT还是IMAGE，如果假定找出来是IMAGE 会error
+                self.data_pool.add("_search", self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MGET, [str(_id)]))
 
-    def search(self, query: RetrievalData, num: int = 4) -> RetrievalData:
-        results = self._search(query, num)
-        return results
+    def search(self, query: RetrievalData, num: int = 4) -> List[RetrievalData]:
+        self._search(query, num)
+        # return self.data_pool.get("_search")
+        # print(self.data_pool.pool)
+        return []
         
 if __name__ == "__main__":
     config = {
