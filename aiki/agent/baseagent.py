@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from aiki.agent.prompts import extract_information_prompt_template, process_memory_prompt_template, merge_memory_prompt_template
+from aiki.agent.prompts import extract_information_prompt_template, memory_edit_prompt_template, merge_memory_prompt_template
 from dataclasses import dataclass  
 from typing import List
   
