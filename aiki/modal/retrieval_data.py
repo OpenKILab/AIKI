@@ -5,7 +5,9 @@ from enum import Enum
 
 from bson import ObjectId
 
-from aiki.multimodal.base import ModalityType
+from aiki.multimodal.base import BaseModalityData, ModalityType
+from aiki.multimodal.image import ImageModalityData
+from aiki.multimodal.text import TextModalityData
 from aiki.serialization.base import Serializable
 
 class RetrievalType(Enum):
@@ -20,16 +22,15 @@ class RetrievalItem:
 
 @dataclass
 class RetrievalData:
-    items: List[RetrievalItem]
+    items: List[BaseModalityData]
 
-# Example usage
 query = RetrievalData(items=[
-    RetrievalItem(
-        type=RetrievalType.TEXT,
+    TextModalityData(
+        _id = ObjectId(),
         content="How does AI work? Explain it in simple terms.",
     ),
-    RetrievalItem(
-        type=RetrievalType.IMAGE,
+    ImageModalityData(
+        _id = ObjectId(),
         content="base64_encoded_data",
     )
 ])

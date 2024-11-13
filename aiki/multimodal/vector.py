@@ -41,7 +41,7 @@ class VectorHandler(BaseModalityHandler):
             if query_data is None:
                 raise ValueError("query_embeddings and query_data cannot be both None")
             else:
-                query_embeddings = [self.embedding_func(data) for data in query_data]
+                query_embeddings = [self.embedding_func([data])[0] for data in query_data]
         return self.database.query(query_embeddings, top_k = top_k)
 
     def upsert(self, data: List[BaseModalityData]):
