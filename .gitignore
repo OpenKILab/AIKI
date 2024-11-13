@@ -135,7 +135,7 @@ dmypy.json
 
 *.sqlite3
 
-db/
+corpus/
 result/
 mmdu/
 videos/

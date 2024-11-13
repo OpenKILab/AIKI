@@ -79,9 +79,9 @@ class DenseRetriever(BaseRetriever):
     def __init__(self, processor):
         super().__init__(processor)
         
-    def _search(self, query: RetrievalData, num: int = 4):
+    def _search(self, query: RetrievalData, num: int = 10):
         queries = [q.content for q in query.items if q.__class__ == TextModalityData]
-        vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries)
+        vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries, top_k=num)
         for item in vector_db_result:
             for (_id, modality_type) in item:
                 operation = TextHandlerOP.MGET
@@ -91,14 +91,14 @@ class DenseRetriever(BaseRetriever):
                     operation = TextHandlerOP.MGET
                 self.data_pool.add("_search", self.processor.execute_operation(modality_type, operation, [str(_id)])[0])
 
-    def search(self, query: RetrievalData, num: int = 4) -> RetrievalData:
+    def search(self, query: RetrievalData, num: int = 10) -> RetrievalData:
         self._search(query, num)
         return self.data_pool.get("_search")
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    source_db = JSONFileDB("./aiki/corpus/db/data.json")
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
+    source_db = JSONFileDB("./db/flicker8k.json")
+    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/flicker8k_index")
 
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
@@ -107,8 +107,11 @@ if __name__ == "__main__":
     dense_retriever = DenseRetriever(processor=processor)
     retrieval_data = RetrievalData(items=[
         TextModalityData(
-            content= "test",
+            content= "棕色狗狗",
             _id = ObjectId(),
         )
     ])
-    result = dense_retriever.search(retrieval_data)
+    result = dense_retriever.search(retrieval_data, num=10)
+    for r in result:
+        print(r)
+        print(r.metadata["summary"])

@@ -3,7 +3,7 @@ from typing import List
 from openai import OpenAI
 from aiki.config.config import Config
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
 
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
@@ -53,15 +53,15 @@ class APISummaryGenerator(BaseSummaryGenerator):
         
     def generate_summary(self, data: RetrievalItem) -> str:
         item = data
-        if item.type not in [RetrievalType.IMAGE, RetrievalType.TEXT]:
+        if item.__class__ not in [TextModalityData, ImageModalityData]:
             raise ValueError(f"{self.__class__.__name__}.genearte_summary(). There is no such modal data processing method")
         
-        content_type = "image_url" if item.type == RetrievalType.IMAGE else "text"
+        content_type = "image_url" if item.__class__ == ImageModalityData else "text"
         content_value = {
-            "url": f"data:image/jpeg;base64,{item.content}"
-        } if item.type == RetrievalType.IMAGE else item.content
+            "url": f"data:image/jpeg;base64,{item._content}"
+        } if item.__class__ == ImageModalityData else item.content
         
-        prompt_text = "What is in this image?" if item.type == RetrievalType.IMAGE else "Please summarize this text."
+        prompt_text = "What is in this image?" if item.__class__ == ImageModalityData else "Please summarize this text."
         
         response = self.client.chat.completions.create(
             model=self.model,
@@ -110,8 +110,8 @@ class TextIndexer(BaseIndexer):
         
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
-            if retreval_data.type != RetrievalType.TEXT:
-                raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
+            if retreval_data.__class__ != TextModalityData:
+                raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.__class__.__name__}")
             '''
             # parent data
             id = ObjectId()
@@ -138,7 +138,7 @@ class TextIndexer(BaseIndexer):
                 #     parent=[id],
                 #     children=[]
                 # )
-                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": datetime.now()})])
+                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": data.metadata["timestamp"]})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
@@ -155,11 +155,14 @@ class ImageIndexer(BaseIndexer):
             self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
         
     def index(self, data: RetrievalData):
-        for retreval_data in data.items:
-            if retreval_data.type != RetrievalType.IMAGE:
-                raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.type}")
+        for retrieval_data in data.items:
+            if retrieval_data.__class__ != ImageModalityData:
+                raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retrieval_data.__class__.__name__}")
             id = ObjectId()
-            summary = self.summary_generator.generate_summary(retreval_data)
+            if "summary" not in retrieval_data.metadata:
+                summary = self.summary_generator.generate_summary(retrieval_data)
+            else:
+                summary = retrieval_data.metadata["summary"]
             # dataSchema = KVSchema(
             #     _id=id,
             #     modality="image",
@@ -169,7 +172,7 @@ class ImageIndexer(BaseIndexer):
             #     parent=[],
             #     children=[]
             # )
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=retreval_data.content, metadata={"summary": summary, "timestamp": datetime.now(), "parent": [], "children": []})])
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=retrieval_data._content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
             image_data = ImageModalityData(_id=id, _content=summary)
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
@@ -183,16 +186,16 @@ class MultimodalIndexer(BaseIndexer):
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
-            if retrieval_data.type == RetrievalType.TEXT:
+            if retrieval_data.__class__ == TextModalityData:
                 text_retrieval_data.items.append(
                     retrieval_data
                 )
-            elif retrieval_data.type == RetrievalType.IMAGE:
+            elif retrieval_data.__class__ == ImageModalityData:
                 image_retrieval_data.items.append(
                     retrieval_data
                 )
             else:
-                raise ValueError(f"Unsupported data type: {retrieval_data.type}")
+                raise ValueError(f"Unsupported data type: {retrieval_data.__class__.__name__}")
         self.text_indexer.index(text_retrieval_data)
         self.image_indexer.index(image_retrieval_data)
         
@@ -215,12 +218,16 @@ if __name__ == "__main__":
     base_path = os.getcwd()
 
     print("Current file path:", base_path)
-    file_path = f"{base_path}/aiki/resource/source/imgs/外滩小巷.jpg"
+    file_path = f"{base_path}/resource/source/imgs/外滩小巷.jpg"
     encoded_image = encode_image_to_base64(file_path)
     
     retrieval_data = RetrievalData(
         items=[
-            RetrievalItem(type= RetrievalType.IMAGE, content= f"""{encoded_image}""")
+            ImageModalityData(
+                _content= encoded_image,
+                _id = ObjectId(),
+                metadata={"timestamp": datetime.now() - timedelta(days = 7), "summary": "test"}
+        ),
         ]
     )
 
