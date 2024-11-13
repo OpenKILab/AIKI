@@ -62,7 +62,7 @@ class BaseRetriever(ABC):
     def _search(self, num: int = None):
         ...
 
-    def search(self, query: RetrievalData, num: int = None) -> List[RetrievalData]:
+    def search(self, query: RetrievalData, num: int = None) -> RetrievalData:
         self.pre_retrieve(query)
         self._search(num)
         self.post_retrieve()
@@ -93,7 +93,12 @@ class DenseRetriever(BaseRetriever):
 
     def search(self, query: RetrievalData, num: int = 10) -> RetrievalData:
         self._search(query, num)
-        return self.data_pool.get("_search")
+        search_res = self.data_pool.get("_search")
+        return RetrievalData(
+            items = [
+                item for item in search_res
+                ]
+            )
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
@@ -112,6 +117,5 @@ if __name__ == "__main__":
         )
     ])
     result = dense_retriever.search(retrieval_data, num=10)
-    for r in result:
-        print(r)
+    for r in result.items:
         print(r.metadata["summary"])
