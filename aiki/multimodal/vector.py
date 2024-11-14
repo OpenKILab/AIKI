@@ -36,13 +36,14 @@ class VectorHandler(BaseModalityHandler):
     def query(self,
               query_data: Optional[List[Any]] = None,
               query_embeddings: Optional[List[Vector]] = None,
-              top_k: int = 10) -> List[ObjectId]:
+              top_k: int = 10,
+              **kwargs) -> List[ObjectId]:
         if query_embeddings is None:
             if query_data is None:
                 raise ValueError("query_embeddings and query_data cannot be both None")
             else:
                 query_embeddings = [self.embedding_func([data])[0] for data in query_data]
-        return self.database.query(query_embeddings, top_k = top_k)
+        return self.database.query(query_embeddings, top_k = top_k, **kwargs)
 
     def upsert(self, data: List[BaseModalityData]):
         vector_data = []
@@ -55,3 +56,4 @@ class VectorHandler(BaseModalityHandler):
                 VectorModalityData(_id=_id, content=content, metadata=metadata)
             )
         self.mset(vector_data)
+        

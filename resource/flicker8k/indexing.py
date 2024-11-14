@@ -38,9 +38,9 @@ for line in lines:
 
 for filename, description in filenames_and_descriptions:
     print(f"Filename: {filename}, Description: {description}")
-    source_db = JSONFileDB("./aiki/corpus/db/flicker8k.json")
+    source_db = JSONFileDB("./db/flicker8k.json")
     
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/flicker8k_index")
+    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/flicker8k_index")
 
     multimodal_indexer = MultimodalIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
     
@@ -56,12 +56,12 @@ for filename, description in filenames_and_descriptions:
                 _content= encoded_image,
                 _id = ObjectId(),
                 metadata={
-                    "timestamp": datetime(
-                        2023, 11, random.randint(1, 13), 
+                    "timestamp": int(datetime(
+                        2024, 11, random.randint(1, 13), 
                         random.randint(6, 20), 
                         random.randint(0, 59), 
                         random.randint(0, 59)
-                    ),
+                    ).timestamp()),
                     "summary": description
                 }
         ),
