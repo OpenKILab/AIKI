@@ -141,5 +141,7 @@ mmdu/
 videos/
 
 # secret
-
 secrets.toml
+
+# chainlit
+chainlit/
