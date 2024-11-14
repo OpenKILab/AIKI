@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import List, Dict, Protocol
 
 from bson import ObjectId
@@ -81,7 +82,9 @@ class DenseRetriever(BaseRetriever):
         
     def _search(self, query: RetrievalData, num: int = 10):
         queries = [q.content for q in query.items if q.__class__ == TextModalityData]
-        vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries, top_k=num)
+        start_time = query.items[0].metadata.get("start_time", 0)
+        end_time = query.items[0].metadata.get("end_time", int((datetime.now()).timestamp()))
+        vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries, top_k=num, start_time = start_time, end_time = end_time)
         for item in vector_db_result:
             for (_id, modality_type) in item:
                 operation = TextHandlerOP.MGET
@@ -114,6 +117,10 @@ if __name__ == "__main__":
         TextModalityData(
             content= "棕色狗狗",
             _id = ObjectId(),
+            metadata={
+                "start_time": 0,
+                "end_time": int(datetime.now().timestamp())
+            }
         )
     ])
     result = dense_retriever.search(retrieval_data, num=10)

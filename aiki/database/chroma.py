@@ -65,10 +65,24 @@ class ChromaDB(BaseVectorDatabase):
     def mdelete(self, ids: List[ObjectId]):
         self._collection.delete(ids=[str(_id) for _id in ids])
 
-    def query(self, query_embeddings: List[Vector], top_k) -> List[List[Tuple[ObjectId, ModalityType]]]:
+    def query(self, query_embeddings: List[Vector], top_k, **kwargs) -> List[List[Tuple[ObjectId, ModalityType]]]:
         result = self._collection.query(
             query_embeddings=query_embeddings,
             n_results=top_k,
+            where= {
+                "$and": [
+                    {
+                    "timestamp": {
+                            "$gte": kwargs["start_time"],
+                        },
+                    },
+                    {
+                    "timestamp": {
+                            "$lte": kwargs["end_time"],
+                        },
+                    }
+                ]
+        }
         )
         query_results = []
         for ids, metadatas in zip(result["ids"], result["metadatas"]):

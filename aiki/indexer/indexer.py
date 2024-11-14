@@ -173,7 +173,7 @@ class ImageIndexer(BaseIndexer):
             #     children=[]
             # )
             self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=retrieval_data._content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
-            image_data = ImageModalityData(_id=id, _content=summary)
+            image_data = ImageModalityData(_id=id, _content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
