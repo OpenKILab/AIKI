@@ -139,3 +139,7 @@ corpus/
 result/
 mmdu/
 videos/
+
+# secret
+
+secrets.toml

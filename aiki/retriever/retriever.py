@@ -99,23 +99,31 @@ class DenseRetriever(BaseRetriever):
                 item for item in search_res
                 ]
             )
-        
+
+
+import torch
+from transformers import AutoModel
+
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    source_db = JSONFileDB("./db/flicker8k.json")
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/flicker8k_index")
+    source_db = JSONFileDB("./db/flicker8k_jina.json")
+    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/flicker8k_jina_index")
+    model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-zh', trust_remote_code=True,
+                                      torch_dtype=torch.bfloat16)
 
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
-    
+    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db,
+                                                                  embedding_func=model.encode))
+
     dense_retriever = DenseRetriever(processor=processor)
     retrieval_data = RetrievalData(items=[
         TextModalityData(
-            content= "棕色狗狗",
+            content= "我的两个女儿在和狗玩",
             _id = ObjectId(),
         )
     ])
     result = dense_retriever.search(retrieval_data, num=10)
     for r in result.items:
         print(r.metadata["summary"])
+        print("---------------------------------")

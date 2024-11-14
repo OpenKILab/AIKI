@@ -97,8 +97,8 @@ class BaseIndexer(ABC):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
 
 class TextIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker()):
-        super().__init__(model_path, sourcedb, vectordb, chunker=chunker)
+    def __init__(self, model_path, sourcedb: BaseKVDatabase = None, vectordb: BaseVectorDatabase = None, chunker: BaseChunker = FixedSizeChunker(), processor = None):
+        super().__init__(model_path, sourcedb, vectordb, chunker=chunker, processor=processor)
         try:
             self.processor._get_handler(ModalityType.TEXT)
         except ValueError:
@@ -142,8 +142,8 @@ class TextIndexer(BaseIndexer):
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
-        super().__init__(model_path, sourcedb, vectordb, chunker=chunker)
+    def __init__(self, model_path, processor = None, sourcedb: BaseKVDatabase = None, vectordb: BaseVectorDatabase = None, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
+        super().__init__(model_path, sourcedb, vectordb, chunker=chunker,  processor = processor)
         self.summary_generator = summary_generator
         try:
             self.processor._get_handler(ModalityType.IMAGE)
@@ -177,10 +177,10 @@ class ImageIndexer(BaseIndexer):
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
+    def __init__(self, model_path, sourcedb: BaseKVDatabase = None, vectordb: BaseVectorDatabase = None, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
         super().__init__(model_path, sourcedb, vectordb)
-        self.text_indexer = TextIndexer(model_path, sourcedb, vectordb, chunker=chunker)
-        self.image_indexer = ImageIndexer(model_path, sourcedb, vectordb, chunker=chunker, summary_generator=summary_generator)
+        self.text_indexer = TextIndexer(model_path,  processor = processor, chunker=chunker)
+        self.image_indexer = ImageIndexer(model_path,  processor = processor, chunker=chunker, summary_generator=summary_generator)
     
     def index(self, data: RetrievalData):
         text_retrieval_data = RetrievalData(items=[])
@@ -207,13 +207,23 @@ def encode_image_to_base64(file_path: str) -> str:
         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
     return encoded_string
 
+import torch
+from transformers import AutoModel
+
 # Example usage
 if __name__ == "__main__":
-    source_db = JSONFileDB("./aiki/corpus/db/data.json")
-    
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
+    processor = MultiModalProcessor()
+    source_db = JSONFileDB("./db/flicker8k_jina.json")
+    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/flicker8k_jina_index")
+    model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-zh', trust_remote_code=True,
+                                      torch_dtype=torch.bfloat16)
 
-    multimodal_indexer = MultimodalIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
+    processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+    processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db,
+                                                                  embedding_func=model.encode))
+
+    multimodal_indexer = MultimodalIndexer(model_path='path/to/model', processor=processor)
     
     base_path = os.getcwd()
 
