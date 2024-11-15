@@ -107,9 +107,8 @@ class InfoExtractAgent(BaseAgent):
 
     def talk(self, message:Message) -> Message:
         context = ""
-        for msg in message:
-            if msg.type == 'text':
-                context = msg.content
+        if message.type == 'text':
+            context = message.content
        
         extracted_information = self.extract_information(context)
         informatioin_dict = parse_json(extracted_information)
