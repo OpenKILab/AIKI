@@ -112,7 +112,7 @@ class InfoExtractAgent(BaseAgent):
        
         extracted_information = self.extract_information(context)
         informatioin_dict = parse_json(extracted_information)
-        target_memory = informatioin_dict['User Memory'][0]
+        target_memory = informatioin_dict['User Memory']
         vague_time = target_memory[1]
         time_answer = self.get_time(vague_time)
         time_dict = parse_json(time_answer)
