@@ -118,7 +118,7 @@ if __name__ == "__main__":
             content= "棕色狗狗",
             _id = ObjectId(),
             metadata={
-                "start_time": 0,
+                "start_time": 1324235,
                 "end_time": int(datetime.now().timestamp())
             }
         )

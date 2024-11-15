@@ -85,10 +85,8 @@ class APISummaryGenerator(BaseSummaryGenerator):
         return summary
 
 class BaseIndexer(ABC):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker()):
+    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
         self.model_path = model_path
-        self.sourcedb = sourcedb  # Source database storage
-        self.vectordb = vectordb  # Vector database storage
         self.chunker = chunker
         
         self.processor = processor
@@ -97,16 +95,8 @@ class BaseIndexer(ABC):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
 
 class TextIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker()):
-        super().__init__(model_path, sourcedb, vectordb, chunker=chunker)
-        try:
-            self.processor._get_handler(ModalityType.TEXT)
-        except ValueError:
-            self.processor.register_handler(ModalityType.TEXT, TextHandler(database=self.sourcedb))
-        try:
-            self.processor._get_handler(ModalityType.VECTOR)
-        except ValueError:
-            self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+    def __init__(self, chunker: BaseChunker = FixedSizeChunker(), processor: MultiModalProcessor = None, model_path: str = None):
+        super().__init__(chunker=chunker, processor=processor, model_path=model_path)
         
     def index(self, data: RetrievalData):
         for retreval_data in data.items:
@@ -142,18 +132,10 @@ class TextIndexer(BaseIndexer):
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
-        super().__init__(model_path, sourcedb, vectordb, chunker=chunker)
+    def __init__(self, processor: MultiModalProcessor = None, chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator(), model_path: str = None):
+        super().__init__(chunker=chunker, processor = processor, model_path=model_path)
         self.summary_generator = summary_generator
-        try:
-            self.processor._get_handler(ModalityType.IMAGE)
-        except ValueError:
-            self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=self.sourcedb))
-        try:
-            self.processor._get_handler(ModalityType.VECTOR)
-        except ValueError:
-            self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vectordb, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
-        
+
     def index(self, data: RetrievalData):
         for retrieval_data in data.items:
             if retrieval_data.__class__ != ImageModalityData:
@@ -177,10 +159,10 @@ class ImageIndexer(BaseIndexer):
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
-    def __init__(self, model_path, sourcedb: BaseKVDatabase, vectordb: BaseVectorDatabase, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator()):
-        super().__init__(model_path, sourcedb, vectordb)
-        self.text_indexer = TextIndexer(model_path, sourcedb, vectordb, chunker=chunker)
-        self.image_indexer = ImageIndexer(model_path, sourcedb, vectordb, chunker=chunker, summary_generator=summary_generator)
+    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator(), model_path: str = None):
+        super().__init__(processor=processor, model_path=model_path)
+        self.text_indexer = TextIndexer(chunker=chunker, processor = processor, model_path=model_path)
+        self.image_indexer = ImageIndexer(chunker=chunker, summary_generator=summary_generator, processor = processor, model_path=model_path)
     
     def index(self, data: RetrievalData):
         text_retrieval_data = RetrievalData(items=[])
@@ -209,11 +191,15 @@ def encode_image_to_base64(file_path: str) -> str:
 
 # Example usage
 if __name__ == "__main__":
-    source_db = JSONFileDB("./aiki/corpus/db/data.json")
-    
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
+    processor = MultiModalProcessor()
+    source_db = JSONFileDB("./db/test/test.json")
+    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/test/test_index")
 
-    multimodal_indexer = MultimodalIndexer(model_path='path/to/model', sourcedb=source_db, vectordb=chroma_db)
+    processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+    processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+    
+    multimodal_indexer = MultimodalIndexer(processor=processor)
     
     base_path = os.getcwd()
 
@@ -223,10 +209,10 @@ if __name__ == "__main__":
     
     retrieval_data = RetrievalData(
         items=[
-            ImageModalityData(
-                _content= encoded_image,
+            TextModalityData(
+                content= f""" content """,
                 _id = ObjectId(),
-                metadata={"timestamp": datetime.now() - timedelta(days = 7), "summary": "test"}
+                metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
         ]
     )
