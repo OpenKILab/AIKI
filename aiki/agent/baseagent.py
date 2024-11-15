@@ -112,8 +112,3 @@ class MemoryEditAgent(BaseAgent):
             process_function = self.process_memory(temp_memory=temp_memory, related_memory=related_memory)
         return process_function
     ...
-
-# to aiki
-class agent_chain:
-    def talk(q:Message) -> Message:
-        ...
