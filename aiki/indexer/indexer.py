@@ -58,7 +58,7 @@ class APISummaryGenerator(BaseSummaryGenerator):
         
         content_type = "image_url" if item.__class__ == ImageModalityData else "text"
         content_value = {
-            "url": f"data:image/jpeg;base64,{item._content}"
+            "url": f"data:image/jpeg;base64,{item.content}"
         } if item.__class__ == ImageModalityData else item.content
         
         prompt_text = "What is in this image?" if item.__class__ == ImageModalityData else "Please summarize this text."
@@ -154,8 +154,8 @@ class ImageIndexer(BaseIndexer):
             #     parent=[],
             #     children=[]
             # )
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=retrieval_data._content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
-            image_data = ImageModalityData(_id=id, _content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=retrieval_data.content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
+            image_data = ImageModalityData(_id=id, content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
@@ -168,6 +168,7 @@ class MultimodalIndexer(BaseIndexer):
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
+            print(retrieval_data)
             if retrieval_data.__class__ == TextModalityData:
                 text_retrieval_data.items.append(
                     retrieval_data
@@ -209,7 +210,7 @@ if __name__ == "__main__":
     
     retrieval_data = RetrievalData(
         items=[
-            TextModalityData(
+            ImageModalityData(
                 content= f""" content """,
                 _id = ObjectId(),
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}

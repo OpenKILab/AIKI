@@ -24,6 +24,9 @@ class DataPool:
     
     def get(self, component_name: str) -> List[RetrievalData]:
         return self.pool.get(component_name, None)
+    
+    def clear(self, component_name: str):
+        self.pool[component_name] = []
 
 class PreRetrieverComponent(ABC):
     @abstractmethod
@@ -97,6 +100,7 @@ class DenseRetriever(BaseRetriever):
     def search(self, query: RetrievalData, num: int = 10) -> RetrievalData:
         self._search(query, num)
         search_res = self.data_pool.get("_search")
+        self.data_pool.clear("_search")
         return RetrievalData(
             items = [
                 item for item in search_res
