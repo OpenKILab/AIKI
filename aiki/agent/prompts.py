@@ -21,7 +21,8 @@ Extracted Information:
 
 ```json
 {{ 
-    'User Intent': 'Query', 'User Memory': [("I", "last week", "eating at restaurants")]
+    "User Intent": "Query", 
+    "User Memory": [("I", "last week", "eating at restaurants")]
 }}
 ```
 
@@ -35,7 +36,8 @@ Extracted Information:
 
 ```json
 {{ 
-    'User Intent': 'Delete', 'User Memory': [("I", "two days ago", "having a family dinner unpleasantly")] 
+    "User Intent": "Delete", 
+    "User Memory": [("I", "two days ago", "having a family dinner unpleasantly")] 
 }}
 ```
 
@@ -49,7 +51,8 @@ Extracted Information:
 
 ```json
 {{ 
-    'User Intent': 'Add', 'User Memory': [("My son", "today", "taking new photos")] 
+    "User Intent": "Add", 
+    "User Memory": [("My son", "today", "taking new photos")] 
 }}
 ```
 
@@ -63,7 +66,8 @@ Extracted Information:
 
 ```json
 {{ 
-    'User Intent': 'Replace', 'User Memory': [("I", "all", "taking photos with family in the past")] 
+    "User Intent": "Replace", 
+    "User Memory": [("I", "all", "taking photos with family in the past")] 
 }}
 ```
 
