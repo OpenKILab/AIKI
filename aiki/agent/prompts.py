@@ -19,9 +19,11 @@ User Input: "Where did I eat last week?"
 
 Extracted Information:
 
-json
-
-{{ 'User Intent': 'Query', 'User Memory': [("I", "last week", "eating at restaurants")] }}
+```json
+{{ 
+    'User Intent': 'Query', 'User Memory': [("I", "last week", "eating at restaurants")]
+}}
+```
 
 ========================================Example 2========================================
 
@@ -31,9 +33,11 @@ User Input: "I had some unpleasant moments during the family dinner two days ago
 
 Extracted Information:
 
-json
-
-{{ 'User Intent': 'Delete', 'User Memory': [("I", "two days ago", "having a family dinner unpleasantly")] }}
+```json
+{{ 
+    'User Intent': 'Delete', 'User Memory': [("I", "two days ago", "having a family dinner unpleasantly")] 
+}}
+```
 
 ========================================Example 3========================================
 
@@ -43,9 +47,11 @@ User Input: "My son took some new photos today."
 
 Extracted Information:
 
-json
-
-{{ 'User Intent': 'Add', 'User Memory': [("My son", "today", "taking new photos")] }}
+```json
+{{ 
+    'User Intent': 'Add', 'User Memory': [("My son", "today", "taking new photos")] 
+}}
+```
 
 ========================================Example 4========================================
 
@@ -55,9 +61,11 @@ User Input: "I want to replace the old family photos with the new ones I just re
 
 Extracted Information:
 
-json
-
-{{ 'User Intent': 'Replace', 'User Memory': [("I", "all", "taking photos with family in the past")] }}
+```json
+{{ 
+    'User Intent': 'Replace', 'User Memory': [("I", "all", "taking photos with family in the past")] 
+}}
+```
 
 ========================================Example End======================================== By following these instructions and requirements, you will be able to accurately extract and categorize information from a single user input. Remember to focus on understanding the context and intent of the user input to ensure that the extracted information is accurate and relevant.
 
@@ -66,9 +74,71 @@ json
 Extracted Information:
 """
 
+time_inference_prompt_template = """ 
+[Instruction]
 
+Given a vague time description and the current precise time, determine the corresponding time range and return it in JSON format. For vague descriptions like "recently" or "a few days ago," consider them as within the past week. If vague description is 'all', it is regarded as the time period from 100 years ago until today.
 
-memory_edit_prompt_template = """ 
+[Requirements]
+-Vague Time Description: A vague time period (e.g., "yesterday," "last week," "recently").
+-Current Precise Time: The exact current time (e.g., "2024-11-13 17:45:51").
+-Output: JSON with "start_time" and "end_time" keys.
+
+[Examples] ========================================Example 1========================================
+
+Input:
+##Vague Time Description: "yesterday"
+##-Current Precise Time: "2024-11-13 17:45:51"
+
+Output:
+
+```json
+{{
+    "start_time": "2024-11-12 00:00:00",
+    "end_time": "2024-11-12 23:59:59"
+}}
+```
+
+========================================Example 2========================================
+
+Input:
+##Vague Time Description: "last week"
+##Current Precise Time: "2024-11-13 17:45:51"
+
+Output:
+
+```json
+{
+    "start_time": "2024-11-06 00:00:00",
+    "end_time": "2024-11-12 23:59:59"
+}
+```
+
+========================================Example 3========================================
+
+Input:
+##Vague Time Description: "recently"
+##Current Precise Time: "2024-11-13 17:45:51"
+
+Output:
+
+```json
+{
+    "start_time": "2024-11-06 00:00:00",
+    "end_time": "2024-11-13 17:45:51"
+}
+```
+
+========================================Example End========================================
+
+[Your Task] Input:
+##Vague Time Description: {vague_time_description}
+##Current Precise Time: {current_precise_time}
+
+Output:
+"""
+
+memory_selection_prompt_template = """ 
 [Instruction]
 Analyze the new memory and the related old memories. Determine the appropriate action for the new memory:
     **Add**: Directly add the new memory to the memory bank.

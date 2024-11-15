@@ -1,14 +1,76 @@
 from abc import ABC, abstractmethod
-from aiki.agent.prompts import extract_information_prompt_template, memory_edit_prompt_template, merge_memory_prompt_template
-from dataclasses import dataclass  
+from aiki.agent.prompts import extract_information_prompt_template, time_inference_prompt_template, memory_selection_prompt_template
 from typing import List
-  
+import json
+from datetime import datetime
+from datetime import datetime
+from aiki.modal.retrieval_data import RetrievalData
+ 
+class AgentAction(Enum):
+    QUERY = 'Query'
+    ADD = 'Add'
+    REPLACE = 'Replace'
+    DELETE = 'Delete'
+
 
 @dataclass  
 class Message:  
-    role: str  
-    content: str  
+    role: str 
+    type: str  
+    content: str
+    summary: str
+    action: AgentAction
+    metadata: dict
 
+
+
+
+def parse_json(text: str) -> dict:
+    # 查找字符串中的 JSON 块
+    if "json" in text:  
+        start = text.find("```json")
+        end = text.find("```", start + 7)
+        # 如果找到了 JSON 块
+        if start != -1 and end != -1:
+            json_string = text[start + 7: end]
+            print(json_string)
+            try:
+                # 解析 JSON 字符串
+                json_data = json.loads(json_string)
+                #valid = check_selector_response(json_data)
+                return json_data
+            except:
+                print(f"error: parse json error!\n")
+                print(f"json_string: {json_string}\n\n")
+                pass
+    elif "```" in text:
+        start = text.find("```")
+        end = text.find("```", start + 3)
+        if start != -1 and end != -1:
+            json_string = text[start + 3: end]
+            
+            try:
+                # 解析 JSON 字符串
+                json_data = json.loads(json_string)
+                return json_data
+            except:
+                print(f"error: parse json error!\n")
+                print(f"json_string: {json_string}\n\n")
+                pass
+    else:
+        start =  text.find("{")
+        end = text.find("}", start + 1)
+        if start != -1:
+            json_string = text[start: end + 1]
+            try:
+                # 解析 JSON 字符串
+                json_data = json.loads(json_string)
+                return json_data
+            except:
+                print(f"error: parse json error!\n")
+                print(f"json_string: {json_string}\n\n")
+                pass
+    return {}
 
 class BaseAgent(ABC):
     @abstractmethod
@@ -21,47 +83,71 @@ class InfoExtractAgent(BaseAgent):
         self.name = 'InfoExtractAgent'
         ...
 
-    def extract_information(self, history:str) -> str:
+    def extract_information(self, context:str) -> str:
         ...
-        prompt = extract_information_prompt_template.format(history=history)
+        prompt = extract_information_prompt_template.format(user_input=context)
         information = self.extract_model(prompt)
         return information
 
+    def get_time(self, vague_time:str) -> tuple:
+        current_time = datetime.now()
+        format_string = "%Y-%m-%d %H:%M:%S"
+        current_time_str = current_time.strftime(format_string)
+        prompt = time_inference_prompt_template.format(vague_time_description=vague_time,current_precise_time=current_time_str)
+        time_answer = self.extract_model(prompt)
+        return time_answer
+    
+    def str_to_timestamp(self, time_str:str) -> float:
+        format_str = "%Y-%m-%d %H:%M:%S"
+        dt_object = datetime.strptime(time_str, format_str)
+        timestamp = dt_object.timestamp()
+        return timestamp
 
-    def talk(self, message:List[Message]) -> List[Message]:
-        history = ""
+
+
+    def talk(self, message:Message) -> Message:
+        context = ""
         for msg in message:
-            history += f"{msg.role}: {msg.content}\n\n"
+            if msg.type == 'text':
+                context = msg.content
        
-        extracted_information = self.extract_information(history)
-        extract_msg = Message(role=self.name, content=extracted_information)  
-        message.append(extract_msg)
+        extracted_information = self.extract_information(context)
+        informatioin_dict = parse_json(extracted_information)
+        target_memory = informatioin_dict['User Memory'][0]
+        vague_time = target_memory[1]
+        time_answer = self.get_time(vague_time)
+        time_dict = parse_json(time_answer)
+        query = target_memory[0] + target_memory[2]
+        time_dict['start_time'] = self.str_to_timestamp(time_dict['start_time'])
+        time_dict['end_time'] = self.str_to_timestamp(time_dict['end_time'])
+        message.metadata = time_dict
+        message.summary = query 
+        message.action = informatioin_dict['User Intent'] 
+
         return message
 
 
 
 
-class MemoryEditAgent(BaseAgent):
+""" class MemoryEditAgent(BaseAgent):
     def __init__(self, config:dict, memo_database:str, process_model:callable):
         self.memo_database = memo_database 
         self.process_model = process_model
         self.name = 'MemoryEditAgent'
+        self.memoryfunction = {AgentAction.ADD:self.add, AgentAction.QUERY:self.search, AgentAction.DELETE:self.delete, AgentAction.REPLACE:self.replace}
         ...
 
-    def read(self, id:str) -> str:
-        ...
-
-    def search(self, query:str, n=3) -> List[str]:
+    def search(self, Message) -> RetrievalData:
         # return a list of ids
         ...
     
-    def add(self, data:str) -> bool:
+    def add(self, Message) -> bool:
         ...
 
-    def delete(self, id:str) -> bool:
+    def delete(self, Message) -> bool:
         ...
     
-    def edit(self, id:str, data:str) -> bool:
+    def replace(self, Message) -> bool:
         # merge & replace
         ... 
     
@@ -95,14 +181,11 @@ class MemoryEditAgent(BaseAgent):
         
 
 
-    def talk(self, message:List[Message]) -> str:
-        history = ""
-        for msg in message:
-            if msg.role != 'InfoExtractAgent':
-                history += f"{msg.role}: {msg.content}\n\n"
-            else:
-                temp_memory = msg.content
-        related_memory_ids = self.search(self, temp_memory)
+    def talk(self, Message) -> Message:
+        action = Message.action
+        if action == AgentAction.ADD:
+
+        related_memorys = self.search(self, Message)
         related_memory = ""
         for rel_id in range(len(related_memory_ids)):
             memory_part = self.read(rel_id)
@@ -113,7 +196,7 @@ class MemoryEditAgent(BaseAgent):
         return process_function
 
     ...
-
+ """
     
 
 
