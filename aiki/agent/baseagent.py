@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from enum import Enum
 from aiki.agent.prompts import extract_information_prompt_template, time_inference_prompt_template, memory_selection_prompt_template
 from typing import List
 import json
