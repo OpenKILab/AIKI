@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 from platform import processor
 
 from bson import ObjectId
@@ -27,6 +28,10 @@ class RAGAgentBridge:
             self.embedding_func = embedding_func
         
         self.processor = MultiModalProcessor()
+        
+        db_directory = f"./db/{name}/"
+        os.makedirs(db_directory, exist_ok=True)
+        
         self.source_db = JSONFileDB(f"./db/{name}/{name}.json")
         self.vector_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/test_index")
 
