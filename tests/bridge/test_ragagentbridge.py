@@ -47,15 +47,16 @@ def test_add(setup_rag_agent):
 def test_query(setup_rag_agent):
     rag_agent = setup_rag_agent
     
-    retrieval_data = RetrievalData(
-        items=[
-            TextModalityData(
-                content= f""" content """,
-                _id = ObjectId(),
-                metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
-        ),
-        ]
-    )
+    retrieval_data = RetrievalData(items=[
+        TextModalityData(
+            content= "棕色狗狗",
+            _id = ObjectId(),
+            metadata={
+                "start_time": 1324235,
+                "end_time": int(datetime.now().timestamp())
+            }
+        )
+    ])
     
     result = rag_agent.query(retrieval_data)
     
