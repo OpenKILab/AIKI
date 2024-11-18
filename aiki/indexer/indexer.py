@@ -53,15 +53,15 @@ class APISummaryGenerator(BaseSummaryGenerator):
         
     def generate_summary(self, data: RetrievalItem) -> str:
         item = data
-        if item.__class__ not in [TextModalityData, ImageModalityData]:
-            raise ValueError(f"{self.__class__.__name__}.genearte_summary(). There is no such modal data processing method")
+        if item.modality not in [ModalityType.TEXT, ModalityType.IMAGE]:
+            raise ValueError(f"{self.item.modality}.genearte_summary(). There is no such modal data processing method")
         
-        content_type = "image_url" if item.__class__ == ImageModalityData else "text"
+        content_type = "image_url" if item.modality == ModalityType.IMAGE else "text"
         content_value = {
-            "url": f"data:image/jpeg;base64,{item._content}"
-        } if item.__class__ == ImageModalityData else item.content
+            "url": f"data:image/jpeg;base64,{item.content}"
+        } if item.modality == ModalityType.TEXT else item.content
         
-        prompt_text = "What is in this image?" if item.__class__ == ImageModalityData else "Please summarize this text."
+        prompt_text = "What is in this image?" if item.modality == ModalityType.IMAGE else "Please summarize this text."
         
         response = self.client.chat.completions.create(
             model=self.model,
@@ -154,8 +154,8 @@ class ImageIndexer(BaseIndexer):
             #     parent=[],
             #     children=[]
             # )
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, _content=retrieval_data._content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
-            image_data = ImageModalityData(_id=id, _content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=retrieval_data.content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
+            image_data = ImageModalityData(_id=id, content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
@@ -168,11 +168,12 @@ class MultimodalIndexer(BaseIndexer):
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
-            if retrieval_data.__class__ == TextModalityData:
+            print(retrieval_data)
+            if retrieval_data.modality == ModalityType.TEXT:
                 text_retrieval_data.items.append(
                     retrieval_data
                 )
-            elif retrieval_data.__class__ == ImageModalityData:
+            elif retrieval_data.modality == ModalityType.IMAGE:
                 image_retrieval_data.items.append(
                     retrieval_data
                 )
@@ -209,7 +210,7 @@ if __name__ == "__main__":
     
     retrieval_data = RetrievalData(
         items=[
-            TextModalityData(
+            ImageModalityData(
                 content= f""" content """,
                 _id = ObjectId(),
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
