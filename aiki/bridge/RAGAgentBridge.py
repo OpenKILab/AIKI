@@ -6,6 +6,7 @@ from bson import ObjectId
 from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
 from aiki.indexer.indexer import MultimodalIndexer
+from aiki.modal import retrieval_data
 from aiki.modal.retrieval_data import RetrievalData, RetrievalType
 from aiki.multimodal.base import BaseModalityData, ModalityType, MultiModalProcessor
 from aiki.multimodal.image import ImageModalityData
@@ -45,35 +46,38 @@ class RAGAgentBridge:
                 return modality_class
         return TextModalityData
         
-    def query(self, retrieval_data: str) -> RetrievalData:
-        # TODO: decode retrieval_data
-        query = "xxx"
-        modal_class: BaseModalityData = self._get_modality_data_class(query)
-        retrieval_data = RetrievalData(
-            items=[
-                modal_class(
-                    content = query,
-                    _id = ObjectId(),
-                    metadata={int((datetime.now()).timestamp())}
-                )
-            ]
-        )
-        return self.multimodal_retriever.search(retrieval_data)
+    def query(self, retrieval_data: RetrievalData) -> RetrievalData:
+        items = []
+        for item in retrieval_data.items:
+            query = item.content
+            modal_class: BaseModalityData = self._get_modality_data_class(query)
+            res_item = modal_class(
+                        _id = ObjectId(),
+                        content = query,
+                        metadata={int((datetime.now()).timestamp())}
+                    )
+            items.append(res_item)
+        return self.multimodal_retriever.search(RetrievalData(
+            items=items
+        ))
     
     def add(self, retrieval_data: str) -> RetrievalData:
-        # TODO: decode retrieval_data
-        query = "xxx"
-        modal_class: BaseModalityData = self._get_modality_data_class(query)
-        retrieval_data = RetrievalData(
-            items=[
-                modal_class(
-                    content = query,
-                    _id = ObjectId(),
-                    metadata={int((datetime.now()).timestamp())}
-                )
-            ]
+        items = []
+        for item in retrieval_data.items:
+            query = item.content
+            modal_class: BaseModalityData = self._get_modality_data_class(query)
+            res_item = modal_class(
+                        _id = ObjectId(),
+                        content = query,
+                        metadata={int((datetime.now()).timestamp())}
+                    )
+            items.append(res_item)
+        index_retrieval_data = RetrievalData(
+            items=items
         )
-        return self.multimodal_indexer.index(retrieval_data)
+        self.multimodal_indexer.index(index_retrieval_data)
+        return index_retrieval_data
+        
         
     def delete():
         ...

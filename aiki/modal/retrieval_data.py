@@ -20,9 +20,10 @@ class RetrievalItem:
     type: RetrievalType
     content: str
 
+@dataclass
 class RetrievalData(Serializable):
-    def __init__(self, items):
-        self.items=List[BaseModalityData]
+    def __init__(self, items: List[BaseModalityData]):
+        self.items:List[BaseModalityData] = items
 
 query = RetrievalData(items=[
     TextModalityData(

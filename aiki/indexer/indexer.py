@@ -53,15 +53,15 @@ class APISummaryGenerator(BaseSummaryGenerator):
         
     def generate_summary(self, data: RetrievalItem) -> str:
         item = data
-        if item.__class__ not in [TextModalityData, ImageModalityData]:
-            raise ValueError(f"{self.__class__.__name__}.genearte_summary(). There is no such modal data processing method")
+        if item.modality not in [ModalityType.TEXT, ModalityType.IMAGE]:
+            raise ValueError(f"{self.item.modality}.genearte_summary(). There is no such modal data processing method")
         
-        content_type = "image_url" if item.__class__ == ImageModalityData else "text"
+        content_type = "image_url" if item.modality == ModalityType.IMAGE else "text"
         content_value = {
             "url": f"data:image/jpeg;base64,{item.content}"
-        } if item.__class__ == ImageModalityData else item.content
+        } if item.modality == ModalityType.TEXT else item.content
         
-        prompt_text = "What is in this image?" if item.__class__ == ImageModalityData else "Please summarize this text."
+        prompt_text = "What is in this image?" if item.modality == ModalityType.IMAGE else "Please summarize this text."
         
         response = self.client.chat.completions.create(
             model=self.model,
@@ -169,11 +169,11 @@ class MultimodalIndexer(BaseIndexer):
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
             print(retrieval_data)
-            if retrieval_data.__class__ == TextModalityData:
+            if retrieval_data.modality == ModalityType.TEXT:
                 text_retrieval_data.items.append(
                     retrieval_data
                 )
-            elif retrieval_data.__class__ == ImageModalityData:
+            elif retrieval_data.modality == ModalityType.IMAGE:
                 image_retrieval_data.items.append(
                     retrieval_data
                 )

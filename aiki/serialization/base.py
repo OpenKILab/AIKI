@@ -112,6 +112,23 @@ class Serializable:
     @classmethod
     def from_dict(cls: Type[T], data: Dict[str, SerializableValue]) -> T:
         """从字典创建对象"""
+        # 支持 RetrievalData items的反序列化
+        if cls.__name__ == "RetrievalData" and "items" in data:
+            items = []
+            for item_data in data["items"]:
+                modality_type = item_data.get("modality", {}).get("__data__")
+                # 动态获取类名 自动适应新枚举
+                class_info = SERIALIZABLE_LIST.get(f"{modality_type.capitalize()}ModalityData")
+                
+                if class_info:
+                    class_name = class_info[-1]
+                    item_cls = get_cls(class_name)
+                    if issubclass(item_cls, Serializable):
+                        items.append(item_cls.from_dict(item_data))
+                else:
+                    items.append(item_data)  # Fallback if no class found
+
+            data["items"] = items
         return cls(**{
             k: cls._deserialize_value(v)
             for k, v in data.items()
