@@ -144,57 +144,25 @@ Output:
 
 memory_selection_prompt_template = """ 
 [Instruction]
-Analyze the new memory and the related old memories. Determine the appropriate action for the new memory:
-    **Add**: Directly add the new memory to the memory bank.
-    **Replace**: Replace a specific old memory (identified by its ID) with the new memory.
-    **Delete**: Delete specific old memories (identified by their IDs) based on the new memory's content or user's intention.
-    **Merge**: Merge the new memory with a specific old memory (identified by its ID) to create a new, combined memory.
+Users hope to find certain memories in the memory bank. Given the user's description of the target memories and several memories from the memory bank, please select the memories that belongs to the user's target memories.
 
-[Function Call Format]
+[Requirements]
+1. The selected memories must conform to the user's description of the target memories.
+2. The number of eligible memories is uncertain; it could be just one, or it could be several (at least one).
+3. Your output should be in JSON format.
+
+[Output Format]
 ```json
 {{
-    'action': '<action>',
-    'memory_id_list': [<memory_id_if_needed>]
+    'selected_ids': [<selected momory ids>]
 }}
 ```
 
-[Examples]
-========================================Example 1========================================
+[User's description of target memories]
+{target_memory}
 
-New memory: (User, Favorite English Movie, Harry Potter)
+[Memory Pool]
+{memory_pool}
 
-Related old memories:
-1. id: 0
-memory: (User, Favorite English movie, The Twilight Saga)
-2. id: 1
-memory: (User, Favorite Chinese movie, King of Comedy)
-3. id: 2
-memory: (User, Absolutely hated movie, Transformers: The Last Knight)
-
-Action:
-```json
-{{
-    'action': 'Replace',
-    'memory_id_list': [0]
-}}
-```
-
-========================================Example 2========================================
-New memory: (User, Favorite English Movie, Harry Potter)
-
-Related old memories:
-1. id: 0
-memory: (User, Favorite English movie, The Twilight Saga)
-2. id: 1
-memory: (User, Favorite Chinese movie, King of Comedy)
-3. id: 2
-memory: (User, Absolutely hated movie, Transformers: The Last Knight)
-
-Action:
-```json
-{{
-    'action': 'Replace',
-    'memory_id_list': [0]
-}}
-```
+[Your output]
 """
