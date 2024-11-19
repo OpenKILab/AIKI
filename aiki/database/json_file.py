@@ -12,6 +12,8 @@ class JSONFileDB(BaseKVDatabase):
     def __init__(self, file_path):
         super().__init__()
         self.file_path = file_path
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
         # Initialize empty JSON file if it doesn't exist
         if not os.path.exists(file_path):
             with open(file_path, 'w') as f:

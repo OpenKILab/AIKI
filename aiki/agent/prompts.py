@@ -1,4 +1,5 @@
 extract_information_prompt_template = """ 
+User Memory 使用中文
 [Instruction]
 
 Your task is to extract information from a single user input. Specifically, you will identify and categorize the information into two parts: User Intent and User Memory (in the form of triplets). This process involves understanding the context, intent, and content of the user input to accurately capture the required information.
