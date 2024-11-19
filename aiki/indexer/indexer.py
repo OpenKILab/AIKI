@@ -1,6 +1,7 @@
 import base64
 from typing import List
 from openai import OpenAI
+from aiki.clip.clip import Clip, JinnaClip
 from aiki.config.config import Config
 from bson import ObjectId
 from datetime import datetime, timedelta
@@ -18,6 +19,7 @@ from aiki.multimodal import ModalityType, MultiModalProcessor, TextHandler, Text
 from chromadb.utils import embedding_functions
 
 from aiki.multimodal.image import ImageHandlerOP, ImageModalityData
+from aiki.multimodal.vector import VectorModalityData
 
 # 多模态数据生成文本摘要
 class BaseSummaryGenerator(ABC):
@@ -168,7 +170,6 @@ class MultimodalIndexer(BaseIndexer):
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
-            print(retrieval_data)
             if retrieval_data.modality == ModalityType.TEXT:
                 text_retrieval_data.items.append(
                     retrieval_data
@@ -185,6 +186,43 @@ class MultimodalIndexer(BaseIndexer):
 class KnowledgeGraphIndexer(BaseIndexer):
     ...
     
+class ClipIndexer(BaseIndexer):
+    def __init__(self, processor: MultimodalIndexer = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
+        super().__init__(processor=processor, model_path=model_path)
+        self.clip_model = JinnaClip()
+        self.processor = processor
+        self.chunker = chunker
+        self.model_path = model_path
+    
+    def index(self, data: RetrievalData):
+        for item in data.items:
+            if item.modality == ModalityType.TEXT:
+                chunks = self.chunker.chunk(item.content)
+                for data in chunks:
+                    cur_id = ObjectId()
+                    retrieval_data = RetrievalData(
+                        items=[TextModalityData(
+                            _id=cur_id,
+                            content=data,
+                            metadata=item.metadata["timestamp"],
+                        )]
+                    )
+                    embeddings = self.clip_model.embed(retrieval_data)
+                    self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
+                    self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings)])
+            elif item.modality == ModalityType.IMAGE:
+                cur_id = ObjectId()
+                retrieval_data = RetrievalData(
+                        items=[ImageModalityData(
+                            _id=cur_id,
+                            content=item.content,
+                            metadata=item.metadata["timestamp"],
+                        )]
+                    )
+                embeddings = self.clip_model.embed(retrieval_data)
+                self.processor.execute_operation(ModalityType.IMAGE, TextHandlerOP.MSET, [item])
+                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings)])
+    
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
@@ -195,12 +233,12 @@ if __name__ == "__main__":
     processor = MultiModalProcessor()
     source_db = JSONFileDB("./db/test/test.json")
     chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/test/test_index")
-
+    
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
     processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     
-    multimodal_indexer = MultimodalIndexer(processor=processor)
+    multimodal_indexer = ClipIndexer(processor=processor)
     
     base_path = os.getcwd()
 
@@ -210,8 +248,8 @@ if __name__ == "__main__":
     
     retrieval_data = RetrievalData(
         items=[
-            ImageModalityData(
-                content= f""" content """,
+            TextModalityData(
+                content= f"""encoded_image""",
                 _id = ObjectId(),
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
