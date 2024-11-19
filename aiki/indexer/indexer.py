@@ -168,7 +168,6 @@ class MultimodalIndexer(BaseIndexer):
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
-            print(retrieval_data)
             if retrieval_data.modality == ModalityType.TEXT:
                 text_retrieval_data.items.append(
                     retrieval_data
