@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from aiki.agent.prompts import extract_information_prompt_template, time_inference_prompt_template, memory_selection_prompt_template
 from typing import List
@@ -8,6 +8,7 @@ from datetime import datetime
 from datetime import datetime
 from aiki.modal.retrieval_data import RetrievalData
 from aiki.bridge.RAGAgentBridge import RAGAgentBridge, RetrievalData
+from aiki.multimodal.base import ModalityType
 from aiki.multimodal.text import TextModalityData
 from aiki.multimodal.image import ImageModalityData
 from bson import ObjectId
@@ -21,12 +22,12 @@ class AgentAction(Enum):
 
 @dataclass  
 class Message:  
-    role: str 
-    type: str  
-    content: str
-    action: AgentAction
-    metadata: dict
-    new_memory: RetrievalData
+    role: str = "user" 
+    type: str = "text"
+    content: str = ""
+    action: AgentAction = AgentAction.QUERY
+    metadata: dict = field(default_factory=dict)
+    new_memory: RetrievalData = None
 
 
 
@@ -46,7 +47,7 @@ def parse_json(text: str) -> dict:
                 #valid = check_selector_response(json_data)
                 return json_data
             except:
-                print(f"error: parse json error!\n")
+                print(f"error: parse \"json\" error!\n")
                 print(f"json_string: {json_string}\n\n")
                 pass
     elif "```" in text:
@@ -60,7 +61,7 @@ def parse_json(text: str) -> dict:
                 json_data = json.loads(json_string)
                 return json_data
             except:
-                print(f"error: parse json error!\n")
+                print(f"error: parse json ``` error!\n")
                 print(f"json_string: {json_string}\n\n")
                 pass
     else:
@@ -115,10 +116,10 @@ class InfoExtractAgent(BaseAgent):
         context = ""
         for msg in message:
             if msg.type == 'text':
-                context = message.content
+                context = msg.content
             elif msg.type == 'image':
-                img = message.content
-       
+                context = msg.content
+                
         extracted_information = self.extract_information(context)
         informatioin_dict = parse_json(extracted_information)
         target_memory = informatioin_dict['User Memory']
@@ -131,11 +132,11 @@ class InfoExtractAgent(BaseAgent):
         new_message = Message()
         new_message.metadata = time_dict
         new_message.content = query 
-        new_message.action = informatioin_dict['User Intent'] 
+        new_message.action = AgentAction[informatioin_dict['User Intent'].upper()]
         new_message.new_memory = RetrievalData(
             items=[
-                ImageModalityData(
-                    content=img,
+                TextModalityData(
+                    content=context,
                     _id=ObjectId(),
                     metadata={"timestamp": int(datetime.now().timestamp())}
                 )
@@ -151,7 +152,7 @@ class MemoryEditAgent(BaseAgent):
         self.process_model = process_model
         self.name = 'MemoryEditAgent'
         self.memoryfunction = {AgentAction.ADD:self.add, AgentAction.QUERY:self.search, AgentAction.DELETE:self.delete, AgentAction.REPLACE:self.replace}
-        self.rag = rag_agent = RAGAgentBridge(name="rag_module")
+        self.rag = RAGAgentBridge(name="rag_module")
         ...
 
     def search(self, message:Message) -> Message:
@@ -164,10 +165,15 @@ class MemoryEditAgent(BaseAgent):
         ])
     
         results = self.rag.query(retrieval_data)
+        """
         memory_pool = ""
         memory_dict = {}
         for i in range(len(results.items)):
-            temp_memory = results.items[i].metadata['summary']
+            temp_memory = ""
+            if results.items[i].modality == ModalityType.TEXT:
+                temp_memory =  results.items[i].content
+            elif results.items[i].modality == ModalityType.IMAGE:
+                temp_memory = results.items[i].metadata['summary']
             memory_pool += f"{str(i + 1)}. id: {results.items[i]._id}\nmemory: {temp_memory}\n"
             memory_dict[results.items[i]._id] = results.items[i].to_json()
         prompt = memory_selection_prompt_template.format(target_memory=message.content, memory_pool=memory_pool)
@@ -177,6 +183,10 @@ class MemoryEditAgent(BaseAgent):
         for memory_id in selected_ids:
             final_result.append(memory_dict[memory_id])
         message.content = str(final_result)
+        """
+        message = Message(
+            content = results.to_json()
+        )
         return message
         # return a list of ids
         ...
@@ -203,7 +213,7 @@ class MemoryEditAgent(BaseAgent):
     ...
 
 
-class Agent_Chain():
+class AgentChain():
     def __init__(self, config:dict, core_model:callable):
         self.core_model = core_model
         self.extractagent = InfoExtractAgent(config, core_model)
