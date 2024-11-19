@@ -7,7 +7,11 @@ import json
 from datetime import datetime
 from datetime import datetime
 from aiki.modal.retrieval_data import RetrievalData
- 
+from aiki.bridge.RAGAgentBridge import RAGAgentBridge, RetrievalData
+from aiki.multimodal.text import TextModalityData
+from aiki.multimodal.image import ImageModalityData
+from bson import ObjectId
+
 class AgentAction(Enum):
     QUERY = 'Query'
     ADD = 'Add'
@@ -20,9 +24,9 @@ class Message:
     role: str 
     type: str  
     content: str
-    summary: str
     action: AgentAction
     metadata: dict
+    new_memory: RetrievalData
 
 
 
@@ -91,7 +95,7 @@ class InfoExtractAgent(BaseAgent):
         information = self.extract_model(prompt)
         return information
 
-    def get_time(self, vague_time:str) -> tuple:
+    def get_time(self, vague_time:str) -> str:
         current_time = datetime.now()
         format_string = "%Y-%m-%d %H:%M:%S"
         current_time_str = current_time.strftime(format_string)
@@ -107,10 +111,13 @@ class InfoExtractAgent(BaseAgent):
 
 
 
-    def talk(self, message:Message) -> Message:
+    def talk(self, message:List[Message]) -> Message:
         context = ""
-        if message.type == 'text':
-            context = message.content
+        for msg in message:
+            if msg.type == 'text':
+                context = message.content
+            elif msg.type == 'image':
+                img = message.content
        
         extracted_information = self.extract_information(context)
         informatioin_dict = parse_json(extracted_information)
@@ -119,86 +126,89 @@ class InfoExtractAgent(BaseAgent):
         time_answer = self.get_time(vague_time)
         time_dict = parse_json(time_answer)
         query = target_memory[0] + target_memory[2]
-        time_dict['start_time'] = self.str_to_timestamp(time_dict['start_time'])
-        time_dict['end_time'] = self.str_to_timestamp(time_dict['end_time'])
-        message.metadata = time_dict
-        message.summary = query 
-        message.action = informatioin_dict['User Intent'] 
+        time_dict['start_time'] = int(self.str_to_timestamp(time_dict['start_time']))
+        time_dict['end_time'] = int(self.str_to_timestamp(time_dict['end_time']))
+        new_message = Message()
+        new_message.metadata = time_dict
+        new_message.content = query 
+        new_message.action = informatioin_dict['User Intent'] 
+        new_message.new_memory = RetrievalData(
+            items=[
+                ImageModalityData(
+                    content=img,
+                    _id=ObjectId(),
+                    metadata={"timestamp": int(datetime.now().timestamp())}
+                )
+            ]
+        )
+        return new_message
 
-        return message
 
 
 
-
-""" class MemoryEditAgent(BaseAgent):
-    def __init__(self, config:dict, memo_database:str, process_model:callable):
-        self.memo_database = memo_database 
+class MemoryEditAgent(BaseAgent):
+    def __init__(self, config:dict, process_model:callable):
         self.process_model = process_model
         self.name = 'MemoryEditAgent'
         self.memoryfunction = {AgentAction.ADD:self.add, AgentAction.QUERY:self.search, AgentAction.DELETE:self.delete, AgentAction.REPLACE:self.replace}
+        self.rag = rag_agent = RAGAgentBridge(name="rag_module")
         ...
 
-    def search(self, Message) -> RetrievalData:
+    def search(self, message:Message) -> Message:
+        retrieval_data = RetrievalData(items=[
+        TextModalityData(
+            content= message.content,
+            _id = ObjectId(),
+            metadata=message.metadata
+        )
+        ])
+    
+        results = self.rag.query(retrieval_data)
+        memory_pool = ""
+        memory_dict = {}
+        for i in range(len(results.items)):
+            temp_memory = results.items[i].metadata['summary']
+            memory_pool += f"{str(i + 1)}. id: {results.items[i]._id}\nmemory: {temp_memory}\n"
+            memory_dict[results.items[i]._id] = results.items[i].to_json()
+        prompt = memory_selection_prompt_template.format(target_memory=message.content, memory_pool=memory_pool)
+        select_result = parse_json(self.process_model(prompt))
+        selected_ids = select_result['selected_ids']
+        final_result = []
+        for memory_id in selected_ids:
+            final_result.append(memory_dict[memory_id])
+        message.content = str(final_result)
+        return message
         # return a list of ids
         ...
     
-    def add(self, Message) -> bool:
+    def add(self, message:Message) -> Message:
+        add_data = message.new_memory
+        self.rag.add(add_data)
+        return message
         ...
 
-    def delete(self, Message) -> bool:
+    def delete(self, message:Message) -> Message:
         ...
     
-    def replace(self, Message) -> bool:
+    def replace(self, message:Message) -> Message:
         # merge & replace
         ... 
     
 
-    def load_function(self, process_function:str) -> bool:
-        # Parses the function call generated by LLM and calls the corresponding memory operation function.
-        try: 
-            #fake pass
-            func, data_list, id = process_function.split('--')
-            if func == 'add':
-                return self.add(data_list[0])
-            elif func == 'delete':
-                return self.delete(id)
-            elif func == 'replace':
-                return self.edit(self, id, data_list[0])
-            elif func == 'merge':
-                prompt = merge_memory_prompt_template.format(old_memory=data_list[0],new_memory=data_list[1])
-                merged_memory = self.process_model(prompt)
-                return self.edit(self, id, merged_memory)
-            else:
-                return False
-
-        except:
-            return False
-
-    def process_memory(self, temp_memory:str, related_memory:str, context:str) -> str:
-        ...
-        prompt = process_memory_prompt_template.format(temp_memory=temp_memory, related_memory=related_memory, context=context)
-        function_call = self.process_model(prompt)
-        return function_call
-        
 
 
-    def talk(self, Message) -> Message:
-        action = Message.action
-        if action == AgentAction.ADD:
-
-        related_memorys = self.search(self, Message)
-        related_memory = ""
-        for rel_id in range(len(related_memory_ids)):
-            memory_part = self.read(rel_id)
-            related_memory += f"##Memory_id: {str(rel_id)}\nMemory_content: {memory_part}\n\n"
-        process_function = self.process_memory(temp_memory=temp_memory, related_memory=related_memory, context=history)
-        while not self.load_function(process_function):
-            process_function = self.process_memory(temp_memory=temp_memory, related_memory=related_memory)
-        return process_function
-
+    def talk(self, message:Message) -> Message:
+        action = message.action
+        return self.memoryfunction[action](message)
     ...
- """
-    
 
 
+class Agent_Chain():
+    def __init__(self, config:dict, core_model:callable):
+        self.core_model = core_model
+        self.extractagent = InfoExtractAgent(config, core_model)
+        self.editagent = MemoryEditAgent(config, core_model)
+        ...
     
+    def talk(self, message:List[Message]) -> Message:
+        return self.editagent.talk(self.extractagent(message))

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, ModalityType, BaseModalityHandlerOP
-from aiki.database import BaseKVDatabase
 
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional
 from bson import ObjectId
@@ -16,28 +15,43 @@ class ImageHandlerOP(BaseModalityHandlerOP):
 class ImageModalityData(BaseModalityData):
     modality: ModalityType = ModalityType.IMAGE
     # url can be a http url or a data uri
-    url: str = ""
-    _content: str = None
+    _url: str = ""
 
+    # # content is a base64 encoded string
+    # @property
+    # def content(self):
+    #     if self._content:
+    #         return self._content
+    #     elif self.url:
+    #         try:
+    #             with urlopen(self.url) as response:
+    #                 data = response.read()
+    #                 self._content = base64.b64encode(data).decode("utf-8")
+    #                 return self._content
+    #         except ValueError:
+    #             raise ValueError(f"Invalid url: {self.url}")
+    #     else:
+    #         raise ValueError("No content or url provided")
+
+    # @content.setter
+    # def content(self, content):
+    #     self._content = content
+    
     # content is a base64 encoded string
     @property
-    def content(self):
-        if self._content:
-            return self._content
-        elif self.url:
-            try:
-                with urlopen(self.url) as response:
-                    data = response.read()
-                    self._content = base64.b64encode(data).decode("utf-8")
-                    return self._content
-            except ValueError:
-                raise ValueError(f"Invalid url: {self.url}")
-        else:
-            raise ValueError("No content or url provided")
+    def url(self):
+        return self._url
 
-    @content.setter
-    def content(self, content):
-        self._content = content
+    @url.setter
+    def url(self, url):
+        try:
+            self._url = url
+            with urlopen(self.url) as response:
+                data = response.read()
+                self.content = base64.b64encode(data).decode("utf-8")
+                return self._url
+        except ValueError:
+            raise ValueError(f"Invalid url: {self.url}")
 
 class ImageHandler(BaseModalityHandler):
     def __init__(self, database):

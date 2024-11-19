@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, BaseModalityHandlerOP, ModalityType
-from aiki.database import BaseVectorDatabase
+# from aiki.database import BaseVectorDatabase
 
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional, Callable
 from bson import ObjectId
@@ -20,7 +20,7 @@ class VectorModalityData(BaseModalityData):
     content: Vector = None
 
 class VectorHandler(BaseModalityHandler):
-    def __init__(self, database: BaseVectorDatabase, embedding_func: Optional[Callable[[Any], Any]] = None):
+    def __init__(self, database: "BaseVectorDatabase", embedding_func: Optional[Callable[[Any], Any]] = None):
         super().__init__(database)
         self.embedding_func = embedding_func
 
@@ -36,17 +36,24 @@ class VectorHandler(BaseModalityHandler):
     def query(self,
               query_data: Optional[List[Any]] = None,
               query_embeddings: Optional[List[Vector]] = None,
-              top_k: int = 10) -> List[ObjectId]:
+              top_k: int = 10,
+              **kwargs) -> List[ObjectId]:
         if query_embeddings is None:
             if query_data is None:
                 raise ValueError("query_embeddings and query_data cannot be both None")
             else:
-                query_embeddings = [self.embedding_func(data) for data in query_data]
-        return self.database.query(query_embeddings, top_k = top_k)
+                query_embeddings = [self.embedding_func([data])[0] for data in query_data]
+        return self.database.query(query_embeddings, top_k = top_k, **kwargs)
 
-    def upsert(self, ids: List[ObjectId], data: List[Any], metadata: List[Dict[str,Any]] = None):
-        vector_data = [
-            VectorModalityData(_id=_id, content=self.embedding_func(item), metadata=metadata)
-            for _id, item in zip(ids, data)
-        ]
+    def upsert(self, data: List[BaseModalityData]):
+        vector_data = []
+        for item in data:
+            _id = item._id
+            content = self.embedding_func([item.content])
+            metadata = item.metadata or {}
+            metadata.update({"__modality": item.modality.value})
+            vector_data.append(
+                VectorModalityData(_id=_id, content=content, metadata=metadata)
+            )
         self.mset(vector_data)
+        

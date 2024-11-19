@@ -1,11 +1,12 @@
 from aiki.database import BaseKVDatabase
 from aiki.database.base import BaseVectorDatabase
-from aiki.multimodal import VectorModalityData, BaseModalityData, Vector
+from aiki.multimodal import VectorModalityData, BaseModalityData
+from aiki.multimodal.types import Vector
 from aiki.serialization import JsonEncoder, JsonDecoder
 from aiki.multimodal import ModalityType
 import os
 import json
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Tuple
 
 from bson import ObjectId
 
@@ -57,16 +58,37 @@ class ChromaDB(BaseVectorDatabase):
     def mset(self, data_list: List[VectorModalityData]):
         self._collection.add(
             ids=[str(data._id) for data in data_list],
-            embeddings=[data.content for data in data_list],
+            embeddings=[data.content[0] for data in data_list],
             metadatas=[data.metadata for data in data_list]
         )
 
     def mdelete(self, ids: List[ObjectId]):
         self._collection.delete(ids=[str(_id) for _id in ids])
 
-    def query(self, query_embeddings: List[Vector], top_k) -> List[ObjectId]:
+    def query(self, query_embeddings: List[Vector], top_k, **kwargs) -> List[List[Tuple[ObjectId, ModalityType]]]:
         result = self._collection.query(
             query_embeddings=query_embeddings,
             n_results=top_k,
+            where= {
+                "$and": [
+                    {
+                    "timestamp": {
+                            "$gte": kwargs["start_time"],
+                        },
+                    },
+                    {
+                    "timestamp": {
+                            "$lte": kwargs["end_time"],
+                        },
+                    }
+                ]
+        }
         )
-        return [[ObjectId(_id) for _id in ids] for ids in result["ids"]]
+        query_results = []
+        for ids, metadatas in zip(result["ids"], result["metadatas"]):
+            query_result = []
+            for _id, metadata in zip(ids, metadatas):
+                modality = ModalityType(metadata["__modality"])
+                query_result.append((ObjectId(_id), modality))
+            query_results.append(query_result)
+        return query_results
