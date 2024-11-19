@@ -1,6 +1,7 @@
 import base64
 from datetime import datetime
 import io
+from typing import List
 from transformers import AutoModel
 import os
 from dotenv import load_dotenv
@@ -20,21 +21,34 @@ class JinnaClip(Clip):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.embedding_model = AutoModel.from_pretrained('jinaai/jina-clip-v1', trust_remote_code=True)
-        
+    
+    def text_embedding_func(self, data:List) -> List:
+        embeddings = []
+        for item in data:
+            embeddings.append(self.embedding_model.encode_text(item))
+        return embeddings
+    
+    def image_embedding_func(self, data:List) -> List:
+        # data : base64 encoded image
+        embeddings = []
+        for item in data:
+            base64_string = item
+            image_data = base64.b64decode(base64_string)
+            image_stream = io.BytesIO(image_data)
+            image = Image.open(image_stream)
+            embeddings.append(self.embedding_model.encode_image(image))
+            
+        return embeddings
+    
     def embed(self, data: RetrievalData):
         embeddings = []
         for item in data.items:
             if item.modality == ModalityType.TEXT:
-                embeddings.append(self.embedding_model.encode_text(item.content))
+                embeddings.extend(self.text_embedding_func([item.content]))
             elif item.modality == ModalityType.IMAGE:
-                base64_string = item.content
-                image_data = base64.b64decode(base64_string)
-                image_stream = io.BytesIO(image_data)
-                image = Image.open(image_stream)
-                embeddings.append(self.embedding_model.encode_image(image)) 
+                embeddings.extend(self.image_embedding_func([item.content])) 
                 
         return embeddings
-    
     
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
