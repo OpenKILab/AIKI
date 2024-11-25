@@ -1,7 +1,6 @@
 import base64
 from typing import List
 from openai import OpenAI
-from aiki.clip.clip import Clip, JinnaClip
 from aiki.config.config import Config
 from bson import ObjectId
 from datetime import datetime, timedelta
@@ -10,6 +9,7 @@ from abc import ABC, abstractmethod
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
+from aiki.embedding_model.embedding_model import JinnaClip
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 

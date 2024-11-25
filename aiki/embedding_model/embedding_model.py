@@ -13,11 +13,13 @@ from aiki.modal.retrieval_data import RetrievalData
 from aiki.multimodal.base import ModalityType
 from aiki.multimodal.image import ImageModalityData
 from aiki.multimodal.text import TextModalityData
+from aiki.multimodal.types import Vector
 
-class Clip:
-    ...
+class EmbeddingModel:
+    def embed(self, data: RetrievalData) -> List[Vector]:
+        raise NotImplementedError("The embed method must be implemented by subclasses.")
 
-class JinnaClip(Clip):
+class JinnaClip(EmbeddingModel):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.embedding_model = AutoModel.from_pretrained('jinaai/jina-clip-v2', trust_remote_code=True)
@@ -41,7 +43,7 @@ class JinnaClip(Clip):
             
         return embeddings
     
-    def embed(self, data: RetrievalData):
+    def embed(self, data: RetrievalData) -> List[Vector]:
         embeddings = []
         for item in data.items:
             if item.modality == ModalityType.TEXT:

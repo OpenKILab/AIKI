@@ -1,3 +1,6 @@
+import sys
+
+import numpy as np
 from aiki.database import BaseKVDatabase
 from aiki.database.base import BaseVectorDatabase
 from aiki.multimodal import VectorModalityData, BaseModalityData
@@ -58,7 +61,7 @@ class ChromaDB(BaseVectorDatabase):
     def mset(self, data_list: List[VectorModalityData]):
         self._collection.add(
             ids=[str(data._id) for data in data_list],
-            embeddings=[data.content[0] for data in data_list],
+            embeddings=[data.content for data in data_list],
             metadatas=[data.metadata for data in data_list]
         )
 
@@ -66,10 +69,10 @@ class ChromaDB(BaseVectorDatabase):
         self._collection.delete(ids=[str(_id) for _id in ids])
 
     def query(self, query_embeddings: List[Vector], top_k, **kwargs) -> List[List[Tuple[ObjectId, ModalityType]]]:
-        result = self._collection.query(
-            query_embeddings=query_embeddings,
-            n_results=top_k,
-            where= {
+        if "start_time" not in kwargs:
+            where = None
+        else:
+            where = {
                 "$and": [
                     {
                     "timestamp": {
@@ -83,6 +86,11 @@ class ChromaDB(BaseVectorDatabase):
                     }
                 ]
         }
+        query_embeddings = [np.array([1, 0]).astype(np.float32)]
+        result = self._collection.query(
+            query_embeddings=query_embeddings,
+            n_results=top_k,
+            where= where
         )
         query_results = []
         for ids, metadatas in zip(result["ids"], result["metadatas"]):
