@@ -20,12 +20,13 @@ class Clip:
 class JinnaClip(Clip):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.embedding_model = AutoModel.from_pretrained('jinaai/jina-clip-v1', trust_remote_code=True)
+        self.embedding_model = AutoModel.from_pretrained('jinaai/jina-clip-v2', trust_remote_code=True)
+        self.truncate_dim = 512
     
     def text_embedding_func(self, data:List) -> List:
         embeddings = []
         for item in data:
-            embeddings.append(self.embedding_model.encode_text(item))
+            embeddings.append(self.embedding_model.encode_text(item, truncate_dim=self.truncate_dim))
         return embeddings
     
     def image_embedding_func(self, data:List) -> List:
@@ -36,7 +37,7 @@ class JinnaClip(Clip):
             image_data = base64.b64decode(base64_string)
             image_stream = io.BytesIO(image_data)
             image = Image.open(image_stream)
-            embeddings.append(self.embedding_model.encode_image(image))
+            embeddings.append(self.embedding_model.encode_image(image, truncate_dim=self.truncate_dim))
             
         return embeddings
     
@@ -74,4 +75,4 @@ if __name__ == "__main__":
 
     clip = JinnaClip()
 
-    print(clip.embedding_func(retrieval_data))
+    print(clip.embed(retrieval_data))
