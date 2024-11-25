@@ -12,6 +12,7 @@ from aiki.multimodal.base import ModalityType
 from aiki.multimodal.text import TextModalityData
 from aiki.multimodal.image import ImageModalityData
 from bson import ObjectId
+from aiki.proxy.query import query_llm
 
 class AgentAction(Enum):
     QUERY = 'Query'
@@ -40,7 +41,6 @@ def parse_json(text: str) -> dict:
         # 如果找到了 JSON 块
         if start != -1 and end != -1:
             json_string = text[start + 7: end]
-            print(json_string)
             try:
                 # 解析 JSON 字符串
                 json_data = json.loads(json_string)
@@ -129,6 +129,8 @@ class InfoExtractAgent(BaseAgent):
         query = target_memory[0] + target_memory[2]
         time_dict['start_time'] = int(self.str_to_timestamp(time_dict['start_time']))
         time_dict['end_time'] = int(self.str_to_timestamp(time_dict['end_time']))
+        print(time_dict['start_time'])
+        print(time_dict['end_time'])
         new_message = Message()
         new_message.metadata = time_dict
         new_message.content = query 
@@ -152,7 +154,7 @@ class MemoryEditAgent(BaseAgent):
         self.process_model = process_model
         self.name = 'MemoryEditAgent'
         self.memoryfunction = {AgentAction.ADD:self.add, AgentAction.QUERY:self.search, AgentAction.DELETE:self.delete, AgentAction.REPLACE:self.replace}
-        self.rag = RAGAgentBridge(name="rag_module")
+        self.rag = RAGAgentBridge(name="flicker8k_xiaobu")
         ...
 
     def search(self, message:Message) -> Message:
@@ -188,14 +190,12 @@ class MemoryEditAgent(BaseAgent):
             content = results.to_json()
         )
         return message
-        # return a list of ids
-        ...
     
     def add(self, message:Message) -> Message:
         add_data = message.new_memory
         self.rag.add(add_data)
+        message.content = message.new_memory.to_json()
         return message
-        ...
 
     def delete(self, message:Message) -> Message:
         ...
@@ -209,16 +209,23 @@ class MemoryEditAgent(BaseAgent):
 
     def talk(self, message:Message) -> Message:
         action = message.action
+        print(action)
         return self.memoryfunction[action](message)
-    ...
 
 
 class AgentChain():
-    def __init__(self, config:dict, core_model:callable):
-        self.core_model = core_model
-        self.extractagent = InfoExtractAgent(config, core_model)
-        self.editagent = MemoryEditAgent(config, core_model)
+    def __init__(self, config:dict = None, core_model:callable = None):
+        self.core_model = core_model if core_model is not None else query_llm
+        self.extractagent = InfoExtractAgent(config, self.core_model)
+        self.editagent = MemoryEditAgent(config, self.core_model)
         ...
     
     def talk(self, message:List[Message]) -> Message:
-        return self.editagent.talk(self.extractagent(message))
+        return self.editagent.talk(self.extractagent.talk(message))
+    
+if __name__ == "__main__":
+    agent_chain = AgentChain()
+    result = agent_chain.talk([Message(
+        content = input
+    )])
+    # result = RetrievalData.from_json(result.content)

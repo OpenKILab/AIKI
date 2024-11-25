@@ -14,6 +14,7 @@ from aiki.multimodal.base import ModalityType, MultiModalProcessor
 from aiki.multimodal.image import ImageModalityData
 from aiki.multimodal.text import TextHandler
 from aiki.multimodal.vector import VectorHandler
+from tqdm import tqdm
 
 # Define paths
 dataset_path = "/Users/mac/Documents/pjlab/repo/flickr8k/Flicker8k_Dataset"
@@ -40,13 +41,13 @@ for line in lines:
                 filenames_and_descriptions.append((filename, description))
 
 
-for filename, description in filenames_and_descriptions:
+for filename, description in tqdm(filenames_and_descriptions, desc="Indexing files"):
     print(f"Filename: {filename}, Description: {description}")
     model = SentenceTransformer('lier007/xiaobu-embedding-v2')
 
-    source_db = JSONFileDB("./db/flicker8k_xiaobu/flicker8k.json")
+    source_db = JSONFileDB("./db/flicker8k_xiaobu/flicker8k_xiaobu.json")
     
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/flicker8k_xiaobu/flicker8k_index")
+    chroma_db = ChromaDB(collection_name="flicker8k_xiaobu_index", persist_directory="./db/flicker8k_xiaobu/flicker8k_xiaobu_index")
 
     processor = MultiModalProcessor()
 

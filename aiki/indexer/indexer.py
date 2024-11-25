@@ -128,7 +128,7 @@ class TextIndexer(BaseIndexer):
                 #     parent=[id],
                 #     children=[]
                 # )
-                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": data.metadata["timestamp"]})])
+                self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": retreval_data.metadata["timestamp"]})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
 class ImageIndexer(BaseIndexer):

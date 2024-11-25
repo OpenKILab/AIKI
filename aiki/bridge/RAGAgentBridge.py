@@ -28,14 +28,14 @@ class RAGAgentBridge:
         
         self.processor = MultiModalProcessor()
         self.source_db = JSONFileDB(f"./db/{name}/{name}.json")
-        self.vector_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/test_index")
+        self.vector_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
         self.processor.register_handler(ModalityType.TEXT, TextHandler(database=self.source_db))
         self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=self.source_db))
         self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=self.vector_db, embedding_func=self.embedding_func))
         
-        self.multimodal_indexer = MultimodalIndexer(processor=processor)
-        self.multimodal_retriever = DenseRetriever(processor=processor)
+        self.multimodal_indexer = MultimodalIndexer(processor=self.processor)
+        self.multimodal_retriever = DenseRetriever(processor=self.processor)
         
     def _get_modality_data_class(self, query: str):
         modality_map = {
@@ -54,14 +54,16 @@ class RAGAgentBridge:
             res_item = modal_class(
                         _id = ObjectId(),
                         content = query,
-                        metadata={int((datetime.now()).timestamp())}
+                        metadata=item.metadata
                     )
             items.append(res_item)
-        return self.multimodal_retriever.search(RetrievalData(
-            items=items
-        ))
+        return self.multimodal_retriever.search(
+            query = RetrievalData(
+            items=items,
+        ),
+            num = 4,)
     
-    def add(self, retrieval_data: str) -> RetrievalData:
+    def add(self, retrieval_data: RetrievalData) -> RetrievalData:
         items = []
         for item in retrieval_data.items:
             query = item.content
@@ -69,7 +71,7 @@ class RAGAgentBridge:
             res_item = modal_class(
                         _id = ObjectId(),
                         content = query,
-                        metadata={int((datetime.now()).timestamp())}
+                        metadata=item.metadata
                     )
             items.append(res_item)
         index_retrieval_data = RetrievalData(

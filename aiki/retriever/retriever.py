@@ -99,7 +99,7 @@ class DenseRetriever(BaseRetriever):
 
     def search(self, query: RetrievalData, num: int = 10) -> RetrievalData:
         self._search(query, num)
-        search_res = self.data_pool.get("_search")
+        search_res = self.data_pool.get("_search", [])
         self.data_pool.clear("_search")
         return RetrievalData(
             items = [

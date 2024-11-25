@@ -10,6 +10,7 @@ import base64
 
 from transformers import AutoModel
 
+from aiki.agent.baseagent import AgentChain, Message
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
 from aiki.modal.retrieval_data import RetrievalData
@@ -49,7 +50,6 @@ if input := st.chat_input():
                                                                   embedding_func=model.encode))
 
     dense_retriever = DenseRetriever(processor=processor)
-    print(input )
     retrieval_data = RetrievalData(items=[
         TextModalityData(
             # content="我儿子玩雪玩的很开心",
@@ -58,14 +58,17 @@ if input := st.chat_input():
             metadata={}
         )
     ])
-    result = dense_retriever.search(retrieval_data, num=3)
+    # result = dense_retriever.search(retrieval_data, num=3)
+    agent_chain = AgentChain()
+    result = agent_chain.talk([Message(
+        content = input
+    )])
+    result = RetrievalData.from_json(result.content)
     # 根据检索到的结果回复
-    prompt = (f"Here are some images related to the query:"
-              f"\n1. 时间: {result.items[0].metadata['timestamp']} 内容：{result.items[0].metadata['summary']}"
-              f"\n2. 时间: {result.items[1].metadata['timestamp']} 内容：{result.items[1].metadata['summary']}"
-              f"\n3. 时间: {result.items[2].metadata['timestamp']} 内容：{result.items[2].metadata['summary']}"
-              f"\n根据这些图片来回复用户的问题：{input}。")
-    print(prompt)
+    prompt = (f"Here are some images/texts related to the query:")
+    for item in result.items:
+        prompt += f"\nnew images/texts : 时间: {item.metadata['timestamp']} 内容：{item.metadata.get('summary', item.content)}"
+    prompt += f"\n根据这些图片来回复用户的问题：{input}。"
     st.session_state.messages.append({"role": "user", "content": prompt})
     response = client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
     msg = response.choices[0].message.content
@@ -75,11 +78,14 @@ if input := st.chat_input():
     items = []
     for item in result.items:
         # print(item.metadata)
+        content_html = f'<div>{item.metadata.get("summary", item.content)[:16]}...</div>'
+        if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
+            content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
         items.append(
             {"id": str(item._id),
-             "content": f'<div>{item.metadata["summary"][:16]}...</div><img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">',
-             "start": datetime.fromtimestamp(item.metadata['timestamp']).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-             }
+            "content": content_html,
+            "start": datetime.fromtimestamp(item.metadata['timestamp']).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            }
         )
     timeline = st_timeline(items, groups=[], options={}, height="512px")
     # st.write(timeline)
