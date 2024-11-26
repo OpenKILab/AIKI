@@ -23,7 +23,7 @@ class DataPool:
         self.pool[component_name].append(data)
     
     def get(self, component_name: str) -> List[RetrievalData]:
-        return self.pool.get(component_name, None)
+        return self.pool.get(component_name, [])
     
     def clear(self, component_name: str):
         self.pool[component_name] = []
@@ -101,11 +101,12 @@ class DenseRetriever(BaseRetriever):
         self._search(query, num)
         search_res = self.data_pool.get("_search")
         self.data_pool.clear("_search")
-        return RetrievalData(
-            items = [
-                item for item in search_res
-                ]
-            )
+        result = RetrievalData(
+                    items = [
+                        item for item in search_res
+                        ]
+                    )
+        return result
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
