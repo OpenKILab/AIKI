@@ -86,7 +86,6 @@ class ChromaDB(BaseVectorDatabase):
                     }
                 ]
         }
-        query_embeddings = [np.array([1, 0]).astype(np.float32)]
         result = self._collection.query(
             query_embeddings=query_embeddings,
             n_results=top_k,

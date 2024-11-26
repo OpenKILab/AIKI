@@ -24,7 +24,7 @@ class DataPool:
         self.pool[component_name].append(data)
     
     def get(self, component_name: str) -> List[RetrievalData]:
-        return self.pool.get(component_name, None)
+        return self.pool.get(component_name, [])
     
     def clear(self, component_name: str):
         self.pool[component_name] = []
@@ -99,11 +99,13 @@ class DenseRetriever(BaseRetriever):
         
     def _search(self, query: RetrievalData, num: int = 10):
         queries = [q.content for q in query.items if q.__class__ == TextModalityData]
-        start_time = query.items[0].metadata.get("start_time", 0)
-        end_time = query.items[0].metadata.get("end_time", int((datetime.now()).timestamp()))
+        start_time = 0
+        end_time = int((datetime.now()).timestamp())
+        if query.items[0].metadata:
+            start_time = query.items[0].metadata.get("start_time", 0)
+            end_time = query.items[0].metadata.get("end_time", int((datetime.now()).timestamp()))
         if self.embedding_model:
             query_embeddings = self.embedding_model.embed(query)
-            print(query_embeddings)
             vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, query_embeddings=query_embeddings, top_k=num, start_time = start_time, end_time = end_time)
         else:
             vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries, top_k=num, start_time = start_time, end_time = end_time)
@@ -120,11 +122,12 @@ class DenseRetriever(BaseRetriever):
         self._search(query, num)
         search_res = self.data_pool.get("_search")
         self.data_pool.clear("_search")
-        return RetrievalData(
+        result = RetrievalData(
             items = [
                 item for item in search_res
                 ]
             )
+        return result
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
@@ -133,7 +136,6 @@ if __name__ == "__main__":
 
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-    # processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     
     dense_retriever = DenseRetriever(processor=processor, embedding_model = JinnaClip())
