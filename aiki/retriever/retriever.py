@@ -131,8 +131,9 @@ class DenseRetriever(BaseRetriever):
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    source_db = JSONFileDB("./db/test/test.json")
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/test/test_index")
+    name = "test"
+    source_db = JSONFileDB(f"./db/{name}/{name}.json")
+    chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
@@ -150,6 +151,4 @@ if __name__ == "__main__":
         )
     ])
     result = dense_retriever.search(retrieval_data, num=10)
-    for r in result.items:
-        print(r.metadata["summary"])
         

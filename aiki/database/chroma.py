@@ -46,7 +46,7 @@ class ChromaDB(BaseVectorDatabase):
         result_list = []
         for _id in ids:
             result = self._collection.get(ids=[str(_id)],
-                                          include=["embeddings", "metadatas"])
+                                        include=["embeddings", "metadatas"])
             metadatas = result.get("metadatas")
             embeddings = result.get("embeddings")
             result_list.append(
@@ -89,7 +89,6 @@ class ChromaDB(BaseVectorDatabase):
         result = self._collection.query(
             query_embeddings=query_embeddings,
             n_results=top_k,
-            where= where
         )
         query_results = []
         for ids, metadatas in zip(result["ids"], result["metadatas"]):

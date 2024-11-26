@@ -104,32 +104,9 @@ class TextIndexer(BaseIndexer):
         for retreval_data in data.items:
             if retreval_data.__class__ != TextModalityData:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.__class__.__name__}")
-            '''
-            # parent data
-            id = ObjectId()
-            dataSchema = KVSchema(
-                _id=id,
-                modality="text",
-                summary="",
-                source_encoded_data=retreval_data.content,
-                inserted_timestamp=datetime.now(),
-                parent=[],
-                children=[]
-            )
-            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=data)])
-            '''
             chunks = self.chunker.chunk(retreval_data.content)
             for data in chunks:
                 cur_id = ObjectId()
-                # dataSchema = KVSchema(
-                #     _id=cur_id,
-                #     modality="text",
-                #     summary="",
-                #     source_encoded_data=data,
-                #     inserted_timestamp=datetime.now(),
-                #     parent=[id],
-                #     children=[]
-                # )
                 self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": retreval_data.metadata["timestamp"]})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
@@ -147,15 +124,6 @@ class ImageIndexer(BaseIndexer):
                 summary = self.summary_generator.generate_summary(retrieval_data)
             else:
                 summary = retrieval_data.metadata["summary"]
-            # dataSchema = KVSchema(
-            #     _id=id,
-            #     modality="image",
-            #     summary=summary,
-            #     source_encoded_data=retreval_data.content,
-            #     inserted_timestamp=datetime.now(),
-            #     parent=[],
-            #     children=[]
-            # )
             self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=retrieval_data.content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
             image_data = ImageModalityData(_id=id, content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
@@ -209,19 +177,22 @@ class ClipIndexer(BaseIndexer):
                     )
                     embeddings = self.clip_model.embed(retrieval_data)
                     self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
-                    self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings)])
+                    # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
+                    self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
             elif item.modality == ModalityType.IMAGE:
                 cur_id = ObjectId()
+                timestamp = item.metadata.get("timestamp", int(datetime.now().timestamp()))
+                summary = item.metadata.get("summary", "")
                 retrieval_data = RetrievalData(
                         items=[ImageModalityData(
                             _id=cur_id,
                             content=item.content,
-                            metadata=item.metadata["timestamp"],
+                            metadata=timestamp,
                         )]
                     )
                 embeddings = self.clip_model.embed(retrieval_data)
-                self.processor.execute_operation(ModalityType.IMAGE, TextHandlerOP.MSET, [item])
-                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings)])
+                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, metadata={"summary": "","timestamp": item.metadata["timestamp"], "parent": [], "children": []})])
+                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
     
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
@@ -231,8 +202,9 @@ def encode_image_to_base64(file_path: str) -> str:
 # Example usage
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    source_db = JSONFileDB("./db/test/test.json")
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/test/test_index")
+    name = "test"
+    source_db = JSONFileDB(f"./db/{name}/{name}.json")
+    chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
     
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
@@ -248,8 +220,8 @@ if __name__ == "__main__":
     
     retrieval_data = RetrievalData(
         items=[
-            TextModalityData(
-                content= f"""encoded_image""",
+            ImageModalityData(
+                content= f"""{encoded_image}""",
                 _id = ObjectId(),
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
