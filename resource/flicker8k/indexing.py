@@ -38,19 +38,19 @@ for line in lines:
                 description = parts[1].strip()  # Extract the description part
                 filenames_and_descriptions.append((filename, description))
 
+name = "jina_clip"
+processor = MultiModalProcessor()
+source_db = JSONFileDB(f"./db/{name}/{name}.json")
+chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
+
+processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db))
+
+multimodal_indexer = ClipIndexer(processor=processor)
 
 for filename, description in filenames_and_descriptions:
     print(f"Filename: {filename}, Description: {description}")
-
-    processor = MultiModalProcessor()
-    source_db = JSONFileDB("./db/jina_clip/jina_clip.json")
-    chroma_db = ChromaDB(collection_name="jina_clip_index", persist_directory="./db/jina_clip/jina_clip_index")
-    
-    processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
-    processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db))
-    
-    multimodal_indexer = ClipIndexer(processor=processor)
     
     base_path = os.getcwd()
 
@@ -61,11 +61,11 @@ for filename, description in filenames_and_descriptions:
     retrieval_data = RetrievalData(
         items=[
             ImageModalityData(
-                _content= encoded_image,
+                content= encoded_image,
                 _id = ObjectId(),
                 metadata={
                     "timestamp": int(datetime(
-                        2024, 11, random.randint(1, 26), 
+                        datetime.now().year, datetime.now().month, random.randint(1, datetime.now().day), 
                         random.randint(6, 20), 
                         random.randint(0, 59), 
                         random.randint(0, 59)
