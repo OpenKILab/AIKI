@@ -164,6 +164,12 @@ class ClipIndexer(BaseIndexer):
     
     def index(self, data: RetrievalData):
         for item in data.items:
+            if not item.metadata:
+                # TODO: set timestamp, summary to default
+                item.metadata = {
+                            "timestamp": int(datetime.now().timestamp()),
+                            "summary": ""
+                            }
             if item.modality == ModalityType.TEXT:
                 chunks = self.chunker.chunk(item.content)
                 for data in chunks:
@@ -181,17 +187,15 @@ class ClipIndexer(BaseIndexer):
                     self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
             elif item.modality == ModalityType.IMAGE:
                 cur_id = ObjectId()
-                timestamp = item.metadata.get("timestamp", int(datetime.now().timestamp()))
-                summary = item.metadata.get("summary", "")
                 retrieval_data = RetrievalData(
                         items=[ImageModalityData(
                             _id=cur_id,
                             content=item.content,
-                            metadata=timestamp,
+                            metadata=item.metadata,
                         )]
                     )
                 embeddings = self.clip_model.embed(retrieval_data)
-                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, metadata={"summary": "","timestamp": item.metadata["timestamp"], "parent": [], "children": []})])
+                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, metadata={"summary": item.metadata.get("summary"), "timestamp": item.metadata.get("timestamp"), "parent": [], "children": []})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
     
 def encode_image_to_base64(file_path: str) -> str:

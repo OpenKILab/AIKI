@@ -131,7 +131,7 @@ class DenseRetriever(BaseRetriever):
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    name = "test"
+    name = "jina_clip"
     source_db = JSONFileDB(f"./db/{name}/{name}.json")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
@@ -151,4 +151,6 @@ if __name__ == "__main__":
         )
     ])
     result = dense_retriever.search(retrieval_data, num=10)
+    for item in result.items:
+        print(item.metadata["summary"])
         

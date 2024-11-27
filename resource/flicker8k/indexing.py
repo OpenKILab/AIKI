@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import os
 import random
 import shutil
+from tqdm import tqdm
 
 from bson import ObjectId
 
@@ -49,20 +50,15 @@ processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db
 
 multimodal_indexer = ClipIndexer(processor=processor)
 
-for filename, description in filenames_and_descriptions:
-    print(f"Filename: {filename}, Description: {description}")
-    
-    base_path = os.getcwd()
-
-    print("Current file name:", filename)
+for filename, description in tqdm(filenames_and_descriptions, desc="Processing files"):
     file_path = f"{validation_folder}/{filename}.jpg"
     encoded_image = encode_image_to_base64(file_path)
     
     retrieval_data = RetrievalData(
         items=[
             ImageModalityData(
-                content= encoded_image,
-                _id = ObjectId(),
+                content=encoded_image,
+                _id=ObjectId(),
                 metadata={
                     "timestamp": int(datetime(
                         datetime.now().year, datetime.now().month, random.randint(1, datetime.now().day), 
