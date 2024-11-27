@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from aiki.bridge.RAGAgentBridge import RAGAgentBridge, RetrievalData
+from aiki.bridge.rag_agent_bridge import RAGAgentBridge, RetrievalData
 from aiki.multimodal.text import TextModalityData
 from bson import ObjectId
 from datetime import datetime, timedelta
