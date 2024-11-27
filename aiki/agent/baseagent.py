@@ -112,8 +112,6 @@ class InfoExtractAgent(BaseAgent):
         timestamp = dt_object.timestamp()
         return timestamp
 
-
-
     def talk(self, message:List[Message]) -> Message:
         context = ""
         for msg in message:
@@ -156,7 +154,7 @@ class MemoryEditAgent(BaseAgent):
         self.process_model = process_model
         self.name = 'MemoryEditAgent'
         self.memoryfunction = {AgentAction.ADD:self.add, AgentAction.QUERY:self.search, AgentAction.DELETE:self.delete, AgentAction.REPLACE:self.replace}
-        self.rag = RAGAgentBridge(name="flicker8k_xiaobu")
+        self.rag = RAGAgentBridge(name="xiaobu_summary")
         ...
 
     def search(self, message:Message) -> Message:
@@ -167,6 +165,7 @@ class MemoryEditAgent(BaseAgent):
             metadata=message.metadata
         )
         ])
+        print(message.metadata)
     
         results = self.rag.query(retrieval_data)
         """
@@ -223,22 +222,16 @@ class AgentChain():
         ...
     
     def talk(self, message:List[Message]) -> Generator[Message, None, None]:
-        # Update message metadata and yield progress for the first agent
-        message[0].metadata['progress'] = "Starting InfoExtractAgent"
+        message[0].metadata['progress'] = "Starting InfoExtract"
         yield message[0]
-        time.sleep(1)
-        # extracted_message = self.extractagent.talk(message)
-        extracted_message = Message()
-        extracted_message.metadata['progress'] = "Completed InfoExtractAgent"
+        extracted_message = self.extractagent.talk(message)
+        # extracted_message = Message()
+        extracted_message.metadata['progress'] = "Completed InfoExtract"
         yield extracted_message
-        time.sleep(1)
-        # Update message metadata and yield progress for the second agent
-        extracted_message.metadata['progress'] = "Starting MemoryEditAgent"
+        extracted_message.metadata['progress'] = "Starting MemoryEdit"
         yield extracted_message
-        # final_message = self.editagent.talk(extracted_message)
-        time.sleep(1)
-        final_message = Message()
-        final_message.metadata['progress'] = "Completed MemoryEditAgent"
+        final_message = self.editagent.talk(extracted_message)
+        final_message.metadata['progress'] = "Completed MemoryEdit"
         yield final_message
     
 if __name__ == "__main__":

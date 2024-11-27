@@ -86,9 +86,12 @@ class ChromaDB(BaseVectorDatabase):
                     }
                 ]
         }
+        print(kwargs["start_time"])
+        print(kwargs["end_time"])
         result = self._collection.query(
             query_embeddings=query_embeddings,
             n_results=top_k,
+            where=where,
         )
         query_results = []
         for ids, metadatas in zip(result["ids"], result["metadatas"]):

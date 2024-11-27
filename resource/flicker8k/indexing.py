@@ -40,16 +40,19 @@ for line in lines:
                 description = parts[1].strip()  # Extract the description part
                 filenames_and_descriptions.append((filename, description))
 
-name = "jina_clip"
+model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+embedding_func = model.encode
+
+name = "xiaobu_summary"
 processor = MultiModalProcessor()
 source_db = JSONFileDB(f"./db/{name}/{name}.json")
 chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
 processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
 processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db))
+processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
 
-multimodal_indexer = ClipIndexer(processor=processor)
+multimodal_indexer = MultimodalIndexer(processor=processor)
 
 for filename, description in tqdm(filenames_and_descriptions, desc="Processing files"):
     file_path = f"{validation_folder}/{filename}.jpg"

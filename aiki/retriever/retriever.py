@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Protocol
 
 from bson import ObjectId
+from sentence_transformers import SentenceTransformer
 from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
 from aiki.embedding_model.embedding_model import EmbeddingModel, JinnaClip
@@ -105,6 +106,8 @@ class DenseRetriever(BaseRetriever):
         if query.items[0].metadata:
             start_time = query.items[0].metadata.get("start_time", 0)
             end_time = query.items[0].metadata.get("end_time", int((datetime.now()).timestamp()))
+        print(start_time)
+        print(end_time)
         if self.embedding_model:
             query_embeddings = self.embedding_model.embed(query)
             vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, query_embeddings=query_embeddings, top_k=num, start_time = start_time, end_time = end_time)
@@ -131,16 +134,19 @@ class DenseRetriever(BaseRetriever):
         return result
         
 if __name__ == "__main__":
+    name = "xiaobu_summary"
     processor = MultiModalProcessor()
-    name = "jina_clip"
     source_db = JSONFileDB(f"./db/{name}/{name}.json")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
+    model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+    embedding_func = model.encode
+    
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
+    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
     
-    dense_retriever = DenseRetriever(processor=processor, embedding_model = JinnaClip())
+    dense_retriever = DenseRetriever(processor=processor)
     retrieval_data = RetrievalData(items=[
         TextModalityData(
             content= "棕色狗狗",
