@@ -6,9 +6,10 @@ authors = ["rochacbruno"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.9,<4.0"
 bson = "^0.5.10"
 pymongo = "^4.10.1"
+torch = "^2.2.2"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
-from aiki.embedding_model.embedding_model import JinnaClip
+from aiki.embedding_model.embedding_model import JinnaClip, ColPali
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 
@@ -193,6 +193,47 @@ class ClipIndexer(BaseIndexer):
                 embeddings = self.clip_model.embed(retrieval_data)
                 self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, metadata={"summary": "","timestamp": item.metadata["timestamp"], "parent": [], "children": []})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
+                
+class ColPaliIndexer(BaseIndexer):
+    def __init__(self, processor: MultimodalIndexer = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
+        super().__init__(processor=processor, model_path=model_path)
+        self.colpali_model = ColPali()
+        self.processor = processor
+        self.chunker = chunker
+        self.model_path = model_path
+        
+    def index(self, data: RetrievalData):
+        for item in data.items:
+            if item.modality == ModalityType.TEXT:
+                chunks = self.chunker.chunk(item.content)
+                for data in chunks:
+                    cur_id = ObjectId()
+                    retrieval_data = RetrievalData(
+                        items=[TextModalityData(
+                            _id=cur_id,
+                            content=data,
+                            metadata=item.metadata["timestamp"],
+                        )]
+                    )
+                    embeddings = self.colpali_model.embed(retrieval_data)
+                    self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
+                    # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
+                    self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
+            elif item.modality == ModalityType.IMAGE:
+                cur_id = ObjectId()
+                timestamp = item.metadata.get("timestamp", int(datetime.now().timestamp()))
+                summary = item.metadata.get("summary", "")
+                retrieval_data = RetrievalData(
+                        items=[ImageModalityData(
+                            _id=cur_id,
+                            content=item.content,
+                            metadata=timestamp,
+                        )]
+                    )
+                embeddings = self.colpali_model.embed(retrieval_data)
+                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, metadata={"summary": "","timestamp": item.metadata["timestamp"], "parent": [], "children": []})])
+                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
+                
     
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
@@ -202,7 +243,7 @@ def encode_image_to_base64(file_path: str) -> str:
 # Example usage
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    name = "test"
+    name = "colpali"
     source_db = JSONFileDB(f"./db/{name}/{name}.json")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
     
@@ -210,7 +251,7 @@ if __name__ == "__main__":
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
     processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     
-    multimodal_indexer = ClipIndexer(processor=processor)
+    multimodal_indexer = ColPaliIndexer(processor=processor)
     
     base_path = os.getcwd()
 
