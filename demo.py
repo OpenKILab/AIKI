@@ -18,9 +18,10 @@ from aiki.multimodal import MultiModalProcessor, ModalityType, TextHandler, Vect
 from aiki.retriever.retriever import DenseRetriever
 from aiki.agent.baseagent import AgentChain, Message
 
-model = SentenceTransformer('lier007/xiaobu-embedding-v2')
-embedding_func = model.encode
-agent_chain = AgentChain()
+if "model" not in st.session_state:
+    model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+    st.session_state.embedding_func = model.encode
+    st.session_state.agent_chain = AgentChain()
 
 def get_data_uri(filepath):
     binary_file_content = open(filepath, 'rb').read()
@@ -46,7 +47,8 @@ with left_column:
         
 # 在右边侧边栏放置 proceed_bar, text_area_placeholder
 with st.sidebar:
-    proceed_bar = st.progress(1, text="agent progress")
+    proceed_bar_placeholder = st.empty()  # Create a placeholder for the progress bar
+    proceed_bar = proceed_bar_placeholder.progress(1, text="agent progress")
     text_area_placeholder = st.empty()
 
     text_area_placeholder.text_area("agent status", "Initial", height=200)
@@ -55,21 +57,23 @@ with st.sidebar:
         st.session_state.talk_completed = False
 
 if input := st.chat_input():
-    client = OpenAI(
-        base_url="https://api.claudeshop.top/v1")
+    if 'client' not in st.session_state:
+        st.session_state.client = OpenAI(base_url="https://api.claudeshop.top/v1")
+
     st.chat_message("user").write(input)
 
-    name = "xiaobu_summary"
-    processor = MultiModalProcessor()
-    source_db = JSONFileDB(f"./db/{name}/{name}.json")
-    chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
+    if 'dense_retriever' not in st.session_state:
+        name = "xiaobu_summary"
+        processor = MultiModalProcessor()
+        source_db = JSONFileDB(f"./db/{name}/{name}.json")
+        chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
-    processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
-    processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-    processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db,
-                                                                    embedding_func=embedding_func))
+        processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+        processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+        processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=st.session_state.embedding_func))
 
-    dense_retriever = DenseRetriever(processor=processor)
+        st.session_state.dense_retriever = DenseRetriever(processor=processor)
+    
     retrieval_data = RetrievalData(items=[
         TextModalityData(
             # content="我儿子玩雪玩的很开心",
@@ -78,7 +82,7 @@ if input := st.chat_input():
             metadata={}
         )
     ])
-    result = dense_retriever.search(retrieval_data, num=3)
+    result = st.session_state.dense_retriever.search(retrieval_data, num=3)
 
     # 根据检索到的结果回复
     prompt = (f"Here are some images/texts related to the query:")
@@ -86,17 +90,14 @@ if input := st.chat_input():
         prompt += f"\nnew images/texts : 时间: {item.metadata['timestamp']} 内容：{item.metadata.get('summary', item.content)}"
     prompt += f"\n根据这些信息，从一个旁观者的角度，根据时间内容等信息，来回复用户的问题，表述尽量类似于对话而不是对信息和问题的陈述：{input}。"
     st.session_state.messages.append({"role": "user", "content": prompt})
-    response = client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
+    response = st.session_state.client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
     msg = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": msg})
     st.chat_message("assistant").write(msg)
     # 输出timeline
     items = []
     for item in result.items:
-        # print(item.metadata)
-        content_html = f'<div style="width:100%; height:100%; background-color:red;">' \
-                        f'<div style="background-color:inherit;">{item.metadata.get("summary", item.content)[:16]}...</div>' \
-                        f'</div>'
+        content_html =  f'<div>{f"【RAW】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
         if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
             content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
         items.append(
@@ -121,16 +122,17 @@ if input := st.chat_input():
         initial_message = Message(content=input)
         all_messages = ""
         
-        for message in agent_chain.talk([initial_message]):
+        for message in st.session_state.agent_chain.talk([initial_message]):
             progress_status = message.metadata.get('progress', '')
             if "Starting InfoExtractAgent" in progress_status:
-                proceed_bar.progress(25, text="agent progress")
+                ## TODO: 不更新
+                proceed_bar_placeholder.progress(25, text="agent progress")
             elif "Completed InfoExtractAgent" in progress_status:
-                proceed_bar.progress(50, text="agent progress")
+                proceed_bar_placeholder.progress(50, text="agent progress")
             elif "Starting MemoryEditAgent" in progress_status:
-                proceed_bar.progress(75, text="agent progress")
+                proceed_bar_placeholder.progress(75, text="agent progress")
             elif "Completed MemoryEditAgent" in progress_status:
-                proceed_bar.progress(100, text="agent progress")
+                proceed_bar_placeholder.progress(100, text="agent progress")
                 result = RetrievalData.from_json(message.content)
 
             all_messages += progress_status + "\n"
@@ -139,18 +141,29 @@ if input := st.chat_input():
             
         last_message = message
         result = RetrievalData.from_json(last_message.content)
-        items = []
-        print(len(result.items))
+        proceed_bar_placeholder.progress(50)
+        agent_items = []
         for item in result.items:
-            content_html = f'<div>{item.metadata.get("summary", item.content)[:16]}...</div>'
+            item_id_str = str(item._id)
+            content_html = None
+            for existing_item in items:
+                if existing_item["id"] == item_id_str:
+                    items.remove(existing_item)
+                    content_html = f'<div>{f"【Overlap】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                    break
+            if not content_html:
+                content_html = f'<div>{f"【Agent】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
             if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
                 content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
-            items.append(
-                {"id": str(item._id),
+
+            agent_items.append(
+                {"id": item_id_str,
                 "content": content_html,
                 "start": datetime.fromtimestamp(item.metadata['timestamp']).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 }
             )
+        items.extend(agent_items)
+        
         timeline = st_timeline(items, groups=[], height="512px", options={
             "editable": {
                     "add": True,  # add new items by double tapping
