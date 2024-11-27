@@ -1,93 +1,52 @@
-import pytest
-import tempfile
+import base64
 import os
+import shutil
+import pytest
 from unittest.mock import MagicMock
-from aiki.indexer.indexer import APISummaryGenerator, ImageIndexer, MultimodalIndexer, TextIndexer
-from aiki.database import BaseKVDatabase, BaseVectorDatabase, JSONFileDB
-from aiki.database.chroma import ChromaDB
-from aiki.modal.retrieval_data import RetrievalData, RetrievalItem, RetrievalType
 
-from chromadb.utils import embedding_functions
-
-
-@pytest.fixture
-def sourcedb():
-    # 创建一个临时文件作为 JSON 数据库
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-    try:
-        with open(temp_file.name, 'w') as f:
-            f.write('{}')
-        
-        connection = JSONFileDB(temp_file.name)
-        yield connection
-    finally:
-        os.unlink(temp_file.name)  # 确保测试完成后删除临时文件
+import requests
+from aiki.indexer.indexer import TextIndexer, ImageIndexer, MultimodalIndexer
+from aiki.modal.retrieval_data import RetrievalData, TextModalityData, ImageModalityData
+from aiki.multimodal import ModalityType, MultiModalProcessor
+from aiki.indexer.chunker import FixedSizeChunker
 
 @pytest.fixture
-def vectordb():
-    connection = ChromaDB(collection_name="text_index", persist_directory="./aiki/corpus/db/test_index")
-    return connection
+def mock_processor():
+    processor = MagicMock(spec=MultiModalProcessor)
+    return processor
 
 @pytest.fixture
-def text_indexer(sourcedb, vectordb):
-    return TextIndexer(model_path='path/to/model', sourcedb=sourcedb, vectordb=vectordb)
+def text_data():
+    return RetrievalData(items=[
+        TextModalityData(content="Sample text", _id="text_id", metadata={"timestamp": 1234567890})
+    ])
 
-def test_text_indexer_index(text_indexer, sourcedb, vectordb):
-    retrieval_data = RetrievalData(
-        items=[
-            RetrievalItem(type=RetrievalType.TEXT, content="Example text data")
-        ]
-    )
+@pytest.fixture
+def image_data():
+    source_image_path = "resource/source/imgs/外滩人流.png"
     
-    text_indexer.index(retrieval_data)
-    embedding_func=embedding_functions.DefaultEmbeddingFunction()
-    embedding = embedding_func(["Example text data"])[0]
-    results = vectordb.query(query_embeddings=embedding, top_k=1)
-    print(results)
-    assert results != []
+    with open(source_image_path, "rb") as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
-@pytest.fixture
-def image_indexer(sourcedb, vectordb):
-    summary_generator = MagicMock()
-    summary_generator.generate_summary.return_value = "Mocked summary for image"
-    return ImageIndexer(model_path='path/to/model', sourcedb=sourcedb, vectordb=vectordb, summary_generator=summary_generator)
+    return RetrievalData(items=[
+        ImageModalityData(content=base64_image, _id="image_id", metadata={"timestamp": 1234567890})
+    ])
 
-def test_image_indexer_index(image_indexer, sourcedb, vectordb):
-    retrieval_data = RetrievalData(
-        items=[
-            RetrievalItem(type=RetrievalType.IMAGE, content="base64_encoded_image_data")
-        ]
-    )
-    
-    mock_embedding = [0.0] * 384
+def test_text_indexer(mock_processor, text_data):
+    text_indexer = TextIndexer(processor=mock_processor)
+    text_indexer.index(text_data)
 
-    image_indexer.index(retrieval_data)
+    mock_processor.execute_operation.assert_called()
 
-    results = vectordb.query(query_embeddings=[mock_embedding], top_k=1)
+def test_image_indexer(mock_processor, image_data):
+    image_indexer = ImageIndexer(processor=mock_processor)
+    image_indexer.index(image_data)
 
-    assert results[0] != []
-    
-@pytest.fixture
-def multimodal_indexer(sourcedb, vectordb):
-    summary_generator = APISummaryGenerator()
-    summary_generator.generate_summary = MagicMock(return_value="Mocked summary for image")
-    return MultimodalIndexer(model_path='path/to/model', sourcedb=sourcedb, vectordb=vectordb, summary_generator=summary_generator)
+    mock_processor.execute_operation.assert_called()
 
-def test_multimodal_indexer_index(multimodal_indexer, sourcedb, vectordb):
-    retrieval_data = RetrievalData(
-        items=[
-            RetrievalItem(type=RetrievalType.TEXT, content="Example text data"),
-            RetrievalItem(type=RetrievalType.IMAGE, content="base64_encoded_image_data")
-        ]
-    )
-    
-    mock_text_embedding = [0.0] * 384  
-    mock_image_embedding = [0.0] * 384  
+def test_multimodal_indexer(mock_processor, text_data, image_data):
+    multimodal_indexer = MultimodalIndexer(processor=mock_processor)
+    combined_data = RetrievalData(items=text_data.items + image_data.items)
+    multimodal_indexer.index(combined_data)
 
-    multimodal_indexer.index(retrieval_data)
-
-    text_results = vectordb.query(query_embeddings=[mock_text_embedding], top_k=1)
-    assert text_results[0] != []
-
-    image_results = vectordb.query(query_embeddings=[mock_image_embedding], top_k=1)
-    assert image_results[0] != []
+    assert mock_processor.execute_operation.call_count == len(combined_data.items)

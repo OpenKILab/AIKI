@@ -49,7 +49,7 @@ class VectorHandler(BaseModalityHandler):
         vector_data = []
         for item in data:
             _id = item._id
-            content = self.embedding_func([item.content])
+            content = self.embedding_func([item.content])[0]
             metadata = item.metadata or {}
             metadata.update({"__modality": item.modality.value})
             vector_data.append(

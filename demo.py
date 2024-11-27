@@ -16,8 +16,12 @@ from aiki.database.chroma import ChromaDB
 from aiki.modal.retrieval_data import RetrievalData
 from aiki.multimodal import MultiModalProcessor, ModalityType, TextHandler, VectorHandler, TextModalityData
 from aiki.retriever.retriever import DenseRetriever
+from aiki.agent.baseagent import AgentChain, Message
+from proceed import ProceedComponent, proceed_component
 
 model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+
+agent_chain = AgentChain()
 
 def get_data_uri(filepath):
     binary_file_content = open(filepath, 'rb').read()
@@ -29,11 +33,80 @@ def get_data_uri(filepath):
 
 st.title("Demo")
 
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+# 创建两列布局
+left_column, _ = st.columns([3, 1])  # 使用占位符列
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+# 在左边一列放置聊天消息
+with left_column:
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
+        
+# 在右边侧边栏放置 my_bar, text_area_placeholder 和 button_placeholder
+with st.sidebar:
+    my_bar = st.progress(1)
+    text_area_placeholder = st.empty()
+    button_placeholder = st.empty()
+
+    st.write(text_area_placeholder.text_area("agent status", "Initial", height=200))
+
+    if 'talk_completed' not in st.session_state:
+        st.session_state.talk_completed = False
+
+    with button_placeholder:
+        proceed_button = st.button("Proceed", disabled=True, key="proceed_button_initial")
+
+
+# 更新右边一列的内容
+# with right_column:
+#     my_bar = st.progress(1)
+#     initial_message = Message(content="content")
+#     all_messages = ""
+
+#     text_area_placeholder = st.empty()
+#     button_placeholder = st.empty()
+    
+#     st.write(text_area_placeholder.text_area("agent status", "Initial", height=200))
+    
+#     if 'talk_completed' not in st.session_state:
+#         st.session_state.talk_completed = False
+
+#     with button_placeholder:
+#         proceed_button = st.button("Proceed", disabled=True, key="proceed_button_initial")
+
+#     last_message = None
+    
+    # for message in agent_chain.talk([initial_message]):
+    #     progress_status = message.metadata.get('progress', '')
+    #     if "Starting InfoExtractAgent" in progress_status:
+    #         my_bar.progress(25)
+    #     elif "Completed InfoExtractAgent" in progress_status:
+    #         my_bar.progress(50)
+    #     elif "Starting MemoryEditAgent" in progress_status:
+    #         my_bar.progress(75)
+    #     elif "Completed MemoryEditAgent" in progress_status:
+    #         my_bar.progress(100)
+
+    #     all_messages += progress_status + "\n"
+    #     text_area_placeholder.text_area("agent status", all_messages, height=200)
+    #     print(progress_status)
+        
+    #     last_message = message
+
+    # st.session_state.talk_completed = True
+
+    # with button_placeholder:
+    #     proceed_button = st.button("Proceed", disabled=not st.session_state.talk_completed, key="proceed_button_final")
+
+
+
+# if "messages" not in st.session_state:
+#     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+
+# for msg in st.session_state.messages:
+#     st.chat_message(msg["role"]).write(msg["content"])
 
 if input := st.chat_input():
     client = OpenAI(
@@ -47,7 +120,7 @@ if input := st.chat_input():
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
     processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db,
-                                                                  embedding_func=model.encode))
+                                                                    embedding_func=model.encode))
 
     dense_retriever = DenseRetriever(processor=processor)
     retrieval_data = RetrievalData(items=[
@@ -58,12 +131,14 @@ if input := st.chat_input():
             metadata={}
         )
     ])
-    # result = dense_retriever.search(retrieval_data, num=3)
+    result = dense_retriever.search(retrieval_data, num=3)
+    '''
     agent_chain = AgentChain()
     result = agent_chain.talk([Message(
         content = input
     )])
     result = RetrievalData.from_json(result.content)
+    '''
     # 根据检索到的结果回复
     prompt = (f"Here are some images/texts related to the query:")
     for item in result.items:
@@ -88,4 +163,32 @@ if input := st.chat_input():
             }
         )
     timeline = st_timeline(items, groups=[], options={}, height="512px")
+    
+    
+    initial_message = Message(content="content")
+    all_messages = ""
+
+    for message in agent_chain.talk([initial_message]):
+        progress_status = message.metadata.get('progress', '')
+        if "Starting InfoExtractAgent" in progress_status:
+            my_bar.progress(25)
+        elif "Completed InfoExtractAgent" in progress_status:
+            my_bar.progress(50)
+        elif "Starting MemoryEditAgent" in progress_status:
+            my_bar.progress(75)
+        elif "Completed MemoryEditAgent" in progress_status:
+            my_bar.progress(100)
+
+        all_messages += progress_status + "\n"
+        text_area_placeholder.text_area("agent status", all_messages, height=200)
+        print(progress_status)
+        
+        last_message = message
+
+st.session_state.talk_completed = True
+
+with button_placeholder:
+    proceed_button = st.button("Proceed", disabled=not st.session_state.talk_completed, key="proceed_button_final")
+    
     # st.write(timeline)
+    

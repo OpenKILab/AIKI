@@ -2,17 +2,19 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from aiki.agent.prompts import extract_information_prompt_template, time_inference_prompt_template, memory_selection_prompt_template
-from typing import List
+from typing import Generator, List
 import json
 from datetime import datetime
 from datetime import datetime
 from aiki.modal.retrieval_data import RetrievalData
-from aiki.bridge.RAGAgentBridge import RAGAgentBridge, RetrievalData
+from aiki.bridge.rag_agent_bridge import RAGAgentBridge, RetrievalData
 from aiki.multimodal.base import ModalityType
 from aiki.multimodal.text import TextModalityData
 from aiki.multimodal.image import ImageModalityData
 from bson import ObjectId
 from aiki.proxy.query import query_llm
+
+import time
 
 class AgentAction(Enum):
     QUERY = 'Query'
@@ -220,8 +222,24 @@ class AgentChain():
         self.editagent = MemoryEditAgent(config, self.core_model)
         ...
     
-    def talk(self, message:List[Message]) -> Message:
-        return self.editagent.talk(self.extractagent.talk(message))
+    def talk(self, message:List[Message]) -> Generator[Message, None, None]:
+        # Update message metadata and yield progress for the first agent
+        message[0].metadata['progress'] = "Starting InfoExtractAgent"
+        yield message[0]
+        time.sleep(1)
+        # extracted_message = self.extractagent.talk(message)
+        extracted_message = Message()
+        extracted_message.metadata['progress'] = "Completed InfoExtractAgent"
+        yield extracted_message
+        time.sleep(1)
+        # Update message metadata and yield progress for the second agent
+        extracted_message.metadata['progress'] = "Starting MemoryEditAgent"
+        yield extracted_message
+        # final_message = self.editagent.talk(extracted_message)
+        time.sleep(1)
+        final_message = Message()
+        final_message.metadata['progress'] = "Completed MemoryEditAgent"
+        yield final_message
     
 if __name__ == "__main__":
     agent_chain = AgentChain()

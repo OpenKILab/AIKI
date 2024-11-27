@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
+from aiki.embedding_model.embedding_model import JinnaClip
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 
@@ -18,6 +19,7 @@ from aiki.multimodal import ModalityType, MultiModalProcessor, TextHandler, Text
 from chromadb.utils import embedding_functions
 
 from aiki.multimodal.image import ImageHandlerOP, ImageModalityData
+from aiki.multimodal.vector import VectorModalityData
 
 # 多模态数据生成文本摘要
 class BaseSummaryGenerator(ABC):
@@ -102,32 +104,9 @@ class TextIndexer(BaseIndexer):
         for retreval_data in data.items:
             if retreval_data.__class__ != TextModalityData:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retreval_data.__class__.__name__}")
-            '''
-            # parent data
-            id = ObjectId()
-            dataSchema = KVSchema(
-                _id=id,
-                modality="text",
-                summary="",
-                source_encoded_data=retreval_data.content,
-                inserted_timestamp=datetime.now(),
-                parent=[],
-                children=[]
-            )
-            self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=id, content=data)])
-            '''
             chunks = self.chunker.chunk(retreval_data.content)
             for data in chunks:
                 cur_id = ObjectId()
-                # dataSchema = KVSchema(
-                #     _id=cur_id,
-                #     modality="text",
-                #     summary="",
-                #     source_encoded_data=data,
-                #     inserted_timestamp=datetime.now(),
-                #     parent=[id],
-                #     children=[]
-                # )
                 self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": retreval_data.metadata["timestamp"]})])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [TextModalityData(_id=cur_id, content=data)])
                 
@@ -145,15 +124,6 @@ class ImageIndexer(BaseIndexer):
                 summary = self.summary_generator.generate_summary(retrieval_data)
             else:
                 summary = retrieval_data.metadata["summary"]
-            # dataSchema = KVSchema(
-            #     _id=id,
-            #     modality="image",
-            #     summary=summary,
-            #     source_encoded_data=retreval_data.content,
-            #     inserted_timestamp=datetime.now(),
-            #     parent=[],
-            #     children=[]
-            # )
             self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=retrieval_data.content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
             image_data = ImageModalityData(_id=id, content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
@@ -184,6 +154,50 @@ class MultimodalIndexer(BaseIndexer):
 class KnowledgeGraphIndexer(BaseIndexer):
     ...
     
+class ClipIndexer(BaseIndexer):
+    def __init__(self, processor: MultimodalIndexer = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
+        super().__init__(processor=processor, model_path=model_path)
+        self.clip_model = JinnaClip()
+        self.processor = processor
+        self.chunker = chunker
+        self.model_path = model_path
+    
+    def index(self, data: RetrievalData):
+        for item in data.items:
+            if not item.metadata:
+                # TODO: set timestamp, summary to default
+                item.metadata = {
+                            "timestamp": int(datetime.now().timestamp()),
+                            "summary": ""
+                            }
+            if item.modality == ModalityType.TEXT:
+                chunks = self.chunker.chunk(item.content)
+                for data in chunks:
+                    cur_id = ObjectId()
+                    retrieval_data = RetrievalData(
+                        items=[TextModalityData(
+                            _id=cur_id,
+                            content=data,
+                            metadata=item.metadata["timestamp"],
+                        )]
+                    )
+                    embeddings = self.clip_model.embed(retrieval_data)
+                    self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
+                    # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
+                    self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
+            elif item.modality == ModalityType.IMAGE:
+                cur_id = ObjectId()
+                retrieval_data = RetrievalData(
+                        items=[ImageModalityData(
+                            _id=cur_id,
+                            content=item.content,
+                            metadata=item.metadata,
+                        )]
+                    )
+                embeddings = self.clip_model.embed(retrieval_data)
+                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, metadata={"summary": item.metadata.get("summary"), "timestamp": item.metadata.get("timestamp"), "parent": [], "children": []})])
+                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
+    
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
@@ -192,14 +206,15 @@ def encode_image_to_base64(file_path: str) -> str:
 # Example usage
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    source_db = JSONFileDB("./db/test/test.json")
-    chroma_db = ChromaDB(collection_name="text_index", persist_directory="./db/test/test_index")
-
+    name = "test"
+    source_db = JSONFileDB(f"./db/{name}/{name}.json")
+    chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
+    
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
     processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     
-    multimodal_indexer = MultimodalIndexer(processor=processor)
+    multimodal_indexer = ClipIndexer(processor=processor)
     
     base_path = os.getcwd()
 
@@ -210,7 +225,7 @@ if __name__ == "__main__":
     retrieval_data = RetrievalData(
         items=[
             ImageModalityData(
-                content= f""" content """,
+                content= f"""{encoded_image}""",
                 _id = ObjectId(),
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
