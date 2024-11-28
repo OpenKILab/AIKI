@@ -129,8 +129,6 @@ class InfoExtractAgent(BaseAgent):
         query = target_memory[0] + target_memory[2]
         time_dict['start_time'] = int(self.str_to_timestamp(time_dict['start_time']))
         time_dict['end_time'] = int(self.str_to_timestamp(time_dict['end_time']))
-        print(time_dict['start_time'])
-        print(time_dict['end_time'])
         new_message = Message()
         new_message.metadata = time_dict
         new_message.content = query 

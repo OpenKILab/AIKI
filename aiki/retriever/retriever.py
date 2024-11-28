@@ -106,8 +106,6 @@ class DenseRetriever(BaseRetriever):
         if query.items[0].metadata:
             start_time = query.items[0].metadata.get("start_time", 0)
             end_time = query.items[0].metadata.get("end_time", int((datetime.now()).timestamp()))
-        print(start_time)
-        print(end_time)
         if self.embedding_model:
             query_embeddings = self.embedding_model.embed(query)
             vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, query_embeddings=query_embeddings, top_k=num, start_time = start_time, end_time = end_time)
