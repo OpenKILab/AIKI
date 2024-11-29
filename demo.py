@@ -26,6 +26,7 @@ if "model" not in st.session_state:
     
 if "role_raw_input" not in st.session_state:
     # prompt hash : raw user input
+    # 避免chat history 显示prompt
     st.session_state.role_raw_input = {}
     
 if 'dense_retriever' not in st.session_state:
@@ -93,7 +94,6 @@ if input := st.chat_input():
         )
     ])
     result = st.session_state.dense_retriever.search(retrieval_data, num=3)
-
     # 根据检索到的结果回复
     prompt = (f"Here are some images/texts related to the query:")
     for item in result.items:
@@ -109,7 +109,8 @@ if input := st.chat_input():
     # 输出timeline
     items = []
     for item in result.items:
-        content_html =  f'<div>{f"【RAW】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+        # content_html =  f'<div>{f"【RAW】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+        content_html =  f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
         if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
             content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
         items.append(
@@ -152,7 +153,6 @@ if input := st.chat_input():
         last_message = message
         if last_message.content:
             result = RetrievalData.from_json(last_message.content)
-            # proceed_bar_placeholder.progress(50)
             agent_items = []
             for item in result.items:
                 item_id_str = str(item._id)
@@ -160,10 +160,12 @@ if input := st.chat_input():
                 for existing_item in items:
                     if existing_item["id"] == item_id_str:
                         items.remove(existing_item)
-                        content_html = f'<div>{f"【Overlap】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                        # content_html = f'<div>{f"【Overlap】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                        content_html = f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
                         break
                 if not content_html:
-                    content_html = f'<div>{f"【Agent】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                    # content_html = f'<div>{f"【Agent】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                    content_html = f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
                 if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
                     content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
 
