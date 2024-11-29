@@ -65,13 +65,13 @@ class ColPali(EmbeddingModel):
         ).eval()
         self.processor = cast(ColPaliProcessor, ColPaliProcessor.from_pretrained(self.model_name))
     
-    def text_embedding_func(self, data:List) -> List[Vector]:
-        batch_queries = self.processor.process_queries(data).to(self.model.device)
+    def text_embedding_func(self, data:List) -> torch.Tensor:
+        batch_queries = self.processor.process_queries(data).to(self.device)
         with torch.no_grad():
             data_embeddings = self.model(**batch_queries)
         return data_embeddings
     
-    def image_embedding_func(self, data:List) -> List[Vector]:
+    def image_embedding_func(self, data:List) -> torch.Tensor:
         # data : base64 encoded image
         images = []
         for item in data:
@@ -80,7 +80,7 @@ class ColPali(EmbeddingModel):
             image_stream = io.BytesIO(image_data)
             image = Image.open(image_stream)
             images.append(image)
-        batch_images = self.processor.process_queries(images).to(self.model.device)
+        batch_images = self.processor.process_queries(images).to(self.device)
         image_embeddings = self.model(**batch_images)
         return image_embeddings
     
@@ -91,14 +91,14 @@ class ColPali(EmbeddingModel):
                 embeddings.extend(self.text_embedding_func([item.content]))
             elif item.modality == ModalityType.IMAGE:
                 embeddings.extend(self.image_embedding_func([item.content])) 
-                
+        embeddings = [embedding.numpy() for embedding in embeddings]
         return embeddings
     
-    def score(self, query, db_data) -> List[float]: 
-        # TODO: define db_data
-        query_embeddings = self.text_embedding_func([query])
-        db_data_embeddings = self.image_embedding_func(db_data)
+    def score(self, query: RetrievalData, encoded_source_data: List[Vector]) -> List[List[float]]: 
+        query_embeddings = self.embed(query)
+        db_data_embeddings = [encoded_source_data.numpy()]
         scores = self.processor.score_multi_vector(query_embeddings, db_data_embeddings)
+        
         return scores
     
 def encode_image_to_base64(file_path: str) -> str:
@@ -126,6 +126,9 @@ if __name__ == "__main__":
     # clip = JinnaClip()
 
     # print(clip.embed(retrieval_data))
+    
+    
+    
     from typing import cast
 
     import torch
@@ -150,7 +153,6 @@ if __name__ == "__main__":
     ]
     queries = [
         "Is attention really all you need?",
-        "Are Benjamin, Antoine, Merve, and Jo best friends?",
     ]
 
     # Process the inputs
@@ -161,7 +163,11 @@ if __name__ == "__main__":
     with torch.no_grad():
         image_embeddings = model(**batch_images)
         querry_embeddings = model(**batch_queries)
-    print(len(image_embeddings))
-    print(len(querry_embeddings))
+    print(image_embeddings.shape)
+    print(querry_embeddings)
+    print(querry_embeddings.shape)
+    print(querry_embeddings.to(torch.float32).cpu().numpy())
+    print(querry_embeddings.to(torch.float32).cpu().numpy().shape)
+
     scores = processor.score_multi_vector(querry_embeddings, image_embeddings)
 
