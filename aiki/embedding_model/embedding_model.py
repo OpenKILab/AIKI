@@ -134,11 +134,11 @@ if __name__ == "__main__":
     from colpali_engine.models import ColPali, ColPaliProcessor
 
     model_name = "vidore/colpali-v1.2"
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = ColPali.from_pretrained(
         model_name,
         torch_dtype=torch.bfloat16,
-        device_map="cuda:0",  # or "mps" if on Apple Silicon
+        device_map=device,  # or "mps" if on Apple Silicon
     ).eval()
 
     processor = ColPaliProcessor.from_pretrained(model_name)
