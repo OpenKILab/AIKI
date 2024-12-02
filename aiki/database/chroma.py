@@ -59,9 +59,24 @@ class ChromaDB(BaseVectorDatabase):
         return result_list
 
     def mset(self, data_list: List[VectorModalityData]):
+        '''
         self._collection.add(
             ids=[str(data._id) for data in data_list],
             embeddings=[data.content for data in data_list],
+            metadatas=[data.metadata for data in data_list]
+        )
+        '''
+        # [print(data.content) for data in data_list]
+        # for data in data_list:
+        #     print(type(data.content))
+        #     print(data.content.shape)
+        #     print(data.content)
+        #     print(data.content)
+        embeddings = [data.content.tolist() for data in data_list]
+        # print(embeddings)
+        self._collection.add(
+            ids=[str(data._id) for data in data_list],
+            embeddings=embeddings,
             metadatas=[data.metadata for data in data_list]
         )
 

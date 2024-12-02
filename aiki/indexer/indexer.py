@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
-from aiki.embedding_model.embedding_model import JinnaClip, ColPali
+from aiki.embedding_model.embedding_model import ColPaliModel, JinnaClip, ColPali
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 
@@ -197,7 +197,7 @@ class ClipIndexer(BaseIndexer):
 class ColPaliIndexer(BaseIndexer):
     def __init__(self, processor: MultimodalIndexer = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
         super().__init__(processor=processor, model_path=model_path)
-        self.colpali_model = ColPali()
+        self.colpali_model = ColPaliModel()
         self.processor = processor
         self.chunker = chunker
         self.model_path = model_path
