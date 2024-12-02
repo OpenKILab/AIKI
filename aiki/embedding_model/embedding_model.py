@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import torch
 from bson import ObjectId
 from PIL import Image
+import numpy as np
 
 from aiki.modal.retrieval_data import RetrievalData
 from aiki.multimodal.base import ModalityType
@@ -15,6 +16,9 @@ from aiki.multimodal.image import ImageModalityData
 from aiki.multimodal.text import TextModalityData
 from aiki.multimodal.types import Vector
 from colpali_engine.models import ColPali, ColPaliProcessor
+from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from numpy.typing import NDArray
+from bson import ObjectId
 
 class EmbeddingModel:
     def embed(self, data: RetrievalData) -> List[Vector]:
@@ -54,14 +58,20 @@ class JinnaClip(EmbeddingModel):
                 
         return embeddings
     
-class ColPali(EmbeddingModel):
+class ColPaliModel(EmbeddingModel):
     def __init__(self):
         self.model_name = "vidore/colpali-v1.2"
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.quantization_config = BitsAndBytesConfig(
+            load_in_8bit=True,  # Enable 8-bit quantization
+            quantization_method="bitsandbytes",  # Use bitsandbytes library
+            llm_int8_enable_fp32_cpu_offload=True  # Enable FP32 CPU offload
+        )
         self.model = ColPali.from_pretrained(
             self.model_name,
             torch_dtype = torch.bfloat16,
-            device_map = self.device,
+            quantization_config=self.quantization_config,
+            device_map=self.device,
         ).eval()
         self.processor = cast(ColPaliProcessor, ColPaliProcessor.from_pretrained(self.model_name))
     
@@ -80,8 +90,9 @@ class ColPali(EmbeddingModel):
             image_stream = io.BytesIO(image_data)
             image = Image.open(image_stream)
             images.append(image)
-        batch_images = self.processor.process_queries(images).to(self.device)
-        image_embeddings = self.model(**batch_images)
+        batch_images = self.processor.process_images(images).to(self.device)
+        with torch.no_grad():
+            image_embeddings = self.model(**batch_images)
         return image_embeddings
     
     def embed(self, data: RetrievalData) -> List[Vector]:
@@ -90,16 +101,16 @@ class ColPali(EmbeddingModel):
             if item.modality == ModalityType.TEXT:
                 embeddings.extend(self.text_embedding_func([item.content]))
             elif item.modality == ModalityType.IMAGE:
-                embeddings.extend(self.image_embedding_func([item.content])) 
-        embeddings = [embedding.numpy() for embedding in embeddings]
+                embeddings.extend(self.image_embedding_func([item.content]))
+        embeddings = [embedding.to(torch.float32).cpu().numpy() for embedding in embeddings]
         return embeddings
     
-    def score(self, query: RetrievalData, encoded_source_data: List[Vector]) -> List[List[float]]: 
-        query_embeddings = self.embed(query)
-        db_data_embeddings = [encoded_source_data.numpy()]
-        scores = self.processor.score_multi_vector(query_embeddings, db_data_embeddings)
+    def score(self, query: RetrievalData, embedding_source_data: List[Vector]) -> List[List[float]]: 
+        query_embeddings = torch.tensor(self.embed(query), dtype=torch.float32, device=self.device)
         
-        return scores
+        torch_embedding_source_data = [torch.tensor(vector, dtype=torch.float32, device=self.device) for vector in embedding_source_data]
+        scores = self.processor.score_multi_vector(query_embeddings, torch_embedding_source_data)
+        return scores.tolist()
     
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
@@ -107,46 +118,11 @@ def encode_image_to_base64(file_path: str) -> str:
     return encoded_string
 
 if __name__ == "__main__":
-    # base_path = os.getcwd()
-
-    # print("Current file path:", base_path)
-    # file_path = f"{base_path}/resource/source/imgs/外滩小巷.jpg"
-    # encoded_image = encode_image_to_base64(file_path)
-
-    # retrieval_data = RetrievalData(
-    #     items=[
-    #         ImageModalityData(
-    #             content= f"""{encoded_image}""",
-    #             _id = ObjectId(),
-    #             metadata={"timestamp": int((datetime.now()).timestamp()), "summary": "test"}
-    #     ),
-    #     ]
-    # )
-
-    # clip = JinnaClip()
-
-    # print(clip.embed(retrieval_data))
+    colpali = ColPaliModel()
     
-    
-    
-    from typing import cast
+    import base64
+    from io import BytesIO
 
-    import torch
-    from PIL import Image
-
-    from colpali_engine.models import ColPali, ColPaliProcessor
-
-    model_name = "vidore/colpali-v1.2"
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = ColPali.from_pretrained(
-        model_name,
-        torch_dtype=torch.bfloat16,
-        device_map=device,  # or "mps" if on Apple Silicon
-    ).eval()
-
-    processor = ColPaliProcessor.from_pretrained(model_name)
-
-    # Your inputs
     images = [
         Image.new("RGB", (32, 32), color="white"),
         Image.new("RGB", (16, 16), color="black"),
@@ -154,20 +130,37 @@ if __name__ == "__main__":
     queries = [
         "Is attention really all you need?",
     ]
+    
+    def encode_image_to_base64(image: Image) -> str:
+        buffered = BytesIO()
+        image.save(buffered, format="jpeg")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-    # Process the inputs
-    batch_images = processor.process_images(images).to(model.device)
-    batch_queries = processor.process_queries(queries).to(model.device)
+    base64_images = [encode_image_to_base64(image) for image in images]
+    rd = RetrievalData(
+        items= [
+            ImageModalityData(
+                _id = ObjectId(),
+                content = base64_images[0],
+            ),
+            TextModalityData(
+                _id = ObjectId(),
+                content = "test",
+            )
+        ]
+    )
 
-    # Forward pass
-    with torch.no_grad():
-        image_embeddings = model(**batch_images)
-        querry_embeddings = model(**batch_queries)
-    print(image_embeddings.shape)
-    print(querry_embeddings)
-    print(querry_embeddings.shape)
-    print(querry_embeddings.to(torch.float32).cpu().numpy())
-    print(querry_embeddings.to(torch.float32).cpu().numpy().shape)
-
-    scores = processor.score_multi_vector(querry_embeddings, image_embeddings)
-
+    embeddings = colpali.embed(rd)
+    query_rd = RetrievalData(
+        items = [
+            TextModalityData(
+                _id = ObjectId(),
+                content = "content",
+            ),
+            TextModalityData(
+                _id = ObjectId(),
+                content = "test",
+            )
+        ]
+    )
+    print(colpali.score(query_rd, [embeddings[0], embeddings[1]]))
