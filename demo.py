@@ -20,7 +20,7 @@ from aiki.retriever.retriever import DenseRetriever
 from aiki.agent.baseagent import AgentChain, Message
 
 if "model" not in st.session_state:
-    st.session_state.model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+    st.session_state.model = SentenceTransformer('lier007/xiaobu-embedding-v2', device='cpu')
     st.session_state.embedding_func = st.session_state.model.encode
     st.session_state.agent_chain = AgentChain()
     
@@ -44,7 +44,6 @@ if 'dense_retriever' not in st.session_state:
 if 'client' not in st.session_state:
     st.session_state.client = OpenAI(base_url="https://api.claudeshop.top/v1")
 
-
 def get_data_uri(filepath):
     binary_file_content = open(filepath, 'rb').read()
     base64_utf8_str = base64.b64encode(binary_file_content).decode('utf-8')
@@ -52,6 +51,7 @@ def get_data_uri(filepath):
     ext = filepath.split('.')[-1]
     data_uri = f'data:image/{ext};base64,{base64_utf8_str}'
     return data_uri
+
 
 st.title("Demo")
 
@@ -189,4 +189,3 @@ if input := st.chat_input():
             })
             timeline_placeholder.write(timeline)
     # st.write(timeline)
-    

@@ -137,7 +137,7 @@ if __name__ == "__main__":
     source_db = JSONFileDB(f"./db/{name}/{name}.json")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
-    model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+    model = SentenceTransformer('lier007/xiaobu-embedding-v2', device="cpu")
     embedding_func = model.encode
     
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))

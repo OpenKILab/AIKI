@@ -40,7 +40,7 @@ for line in lines:
                 description = parts[1].strip()  # Extract the description part
                 filenames_and_descriptions.append((filename, description))
 
-model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+model = SentenceTransformer('lier007/xiaobu-embedding-v2', device="cpu")
 embedding_func = model.encode
 
 name = "xiaobu_summary"

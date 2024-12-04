@@ -21,7 +21,7 @@ class RAGAgentBridge:
     def __init__(self, name: str, embedding_func: callable=None):
         self.name = name
         if embedding_func is None:
-            self.model = SentenceTransformer('lier007/xiaobu-embedding-v2')
+            self.model = SentenceTransformer('lier007/xiaobu-embedding-v2', device="cpu")
             self.embedding_func = self.model.encode
         else:
             self.embedding_func = embedding_func
