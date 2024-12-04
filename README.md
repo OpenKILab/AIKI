@@ -3,13 +3,31 @@
 [![codecov](https://codecov.io/gh/OpenKILab/AIKI/branch/main/graph/badge.svg?token=AIKI_token_here)](https://codecov.io/gh/OpenKILab/AIKI)
 [![CI](https://github.com/OpenKILab/AIKI/actions/workflows/main.yml/badge.svg)](https://github.com/OpenKILab/AIKI/actions/workflows/main.yml)
 
+
+
 Awesome aiki created by OpenKILab
 
-## Install it from PyPI
+## Installation
+```py
+#not supported yet
+```
+
+## Pre-requisites
+
+1. [Optinal] Install [conda](https://docs.conda.io/en/latest/miniconda.html) if you want to keep your system clean. 
+Then create a conda environment.
 
 ```bash
-pip install aiki
+conda create -n aiki python=3.10
+conda activate aiki
 ```
+2. Install [poetry](https://python-poetry.org/docs/#installation)
+
+3. Config
+```bash
+export OPENAI_API_KEY="your_openai_api_key"
+```
+
 
 ## Usage
 
