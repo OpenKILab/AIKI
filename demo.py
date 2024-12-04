@@ -109,8 +109,9 @@ if input := st.chat_input():
     # 输出timeline
     items = []
     for item in result.items:
-        # content_html =  f'<div>{f"【RAW】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
-        content_html =  f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+        content_summary = item.metadata.get("summary", item.content)[:16]
+        content_html =  f'<div>{f"{content_summary}"}...</div>'
+        # content_html =  f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
         if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
             content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
         items.append(
@@ -161,11 +162,13 @@ if input := st.chat_input():
                     if existing_item["id"] == item_id_str:
                         items.remove(existing_item)
                         # content_html = f'<div>{f"【Overlap】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
-                        content_html = f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                        content_summary = item.metadata.get("summary", item.content)[:16]
+                        content_html = f'<div>{f"{content_summary}"}...</div>'
                         break
                 if not content_html:
                     # content_html = f'<div>{f"【Agent】{item.metadata.get("summary", item.content)[:16]}"}...</div>'
-                    content_html = f'<div>{f"{item.metadata.get("summary", item.content)[:16]}"}...</div>'
+                    content_summary = item.metadata.get("summary", item.content)[:16]
+                    content_html = f'<div>{f"{content_summary}"}...</div>'
                 if item.modality == ModalityType.IMAGE:  # Check if item.content is not empty
                     content_html += f'<img src="data:image/jpg;base64,{item.content}" style="width:128px; height:100px;">'
 
