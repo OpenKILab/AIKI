@@ -16,7 +16,6 @@ from bson import ObjectId
 # TODO: aws s3 SDK
 class AIKI:
     def __init__(self, db_name: str = "xiaobu_summary", model_name: str = "lier007/xiaobu-embedding-v2"):
-        model_name = 'lier007/xiaobu-embedding-v2'
         try:
             model = SentenceTransformer(model_name)
         except Exception as e:
