@@ -37,15 +37,17 @@ retrieval_data = RetrievalData(items=[
             metadata={}
         )
     ])
-
+print("======================")
+print("======================")
 result = dense_retriever.search(retrieval_data, num=3)
-
+print(result.items)
 for item in result.items:
     # image summary
     print(item.metadata.get('summary', ""))
     base64_encoded_image = item.content
     image_data = base64.b64decode(base64_encoded_image)
-    with open(f"/tmp/{item._id}.jpg", "wb") as image_file:
+    with open(f"./tmp/{item._id}.jpg", "wb") as image_file:
         image_file.write(image_data)
+        print(item.metadata['summary'])
         
 ### index
