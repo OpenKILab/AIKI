@@ -27,7 +27,10 @@ multimodal_indexer = ClipIndexer(processor=processor)
 batch_size = 16
 batch_data = []
 
-with open('/mnt/hwfile/kilab/leishanzhe/data/Objects365v1/Objects365v1/OpenDataLab___Objects365_v1/raw/Objects365_v1/2019-08-02/objects365_val.json', 'r') as f:
+path = 'path to objects365_val.json'
+target_path = 'path to objects365 images folder'
+
+with open(path, 'r') as f:
     objects = ijson.items(f, 'annotations.item')
     
     for obj in tqdm(objects, desc="Processing objects"):
@@ -38,7 +41,7 @@ with open('/mnt/hwfile/kilab/leishanzhe/data/Objects365v1/Objects365v1/OpenDataL
         prefix = f"{img_id}_{annot_id}_{cat_id}"
         image_file_name = f"""{prefix}.jpg"""
         
-        directory_path = '/mnt/hwfile/kilab/leishanzhe/data/Objects365v1/Objects365v1/OpenDataLab___Objects365_v1/raw/Objects365_v1/2019-08-02/subimages_val/'
+        directory_path = target_path
         file_path = os.path.join(directory_path, image_file_name)
         if os.path.exists(file_path):
             image_data = ImageModalityData(
