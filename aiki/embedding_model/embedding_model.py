@@ -1,8 +1,8 @@
 import base64
 from datetime import datetime
 import io
-from typing import List, cast
-from transformers import AutoModel
+from typing import List
+from transformers import AutoModel, AutoConfig
 import os
 from dotenv import load_dotenv
 import torch
@@ -27,7 +27,11 @@ class EmbeddingModel:
 class JinnaClip(EmbeddingModel):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.embedding_model = AutoModel.from_pretrained('jinaai/jina-clip-v2', trust_remote_code=True)
+        self.embedding_model = AutoModel.from_pretrained(
+            'jinaai/jina-clip-v2', 
+            trust_remote_code=True, 
+            device_map=self.device
+        )
         self.truncate_dim = 512
     
     def text_embedding_func(self, data:List) -> List:
@@ -47,6 +51,9 @@ class JinnaClip(EmbeddingModel):
             embeddings.append(self.embedding_model.encode_image(image, truncate_dim=self.truncate_dim))
             
         return embeddings
+
+    def batch_image_embedding_func(self, data:List) -> List:
+        return self.embedding_model.encode_image(data, truncate_dim=self.truncate_dim)
     
     def embed(self, data: RetrievalData) -> List[Vector]:
         embeddings = []
@@ -56,6 +63,14 @@ class JinnaClip(EmbeddingModel):
             elif item.modality == ModalityType.IMAGE:
                 embeddings.extend(self.image_embedding_func([item.content])) 
                 
+        return embeddings
+
+    def batch_embed(self, data: RetrievalData) -> List[Vector]:
+        embeddings = []
+        urls = []
+        for item in data.items:
+            urls.append(item.url)
+        embeddings = self.batch_image_embedding_func(urls)
         return embeddings
     
 class ColPaliModel(EmbeddingModel):
@@ -140,6 +155,7 @@ if __name__ == "__main__":
     rd = RetrievalData(
         items= [
             ImageModalityData(
+                url= file_path,
                 _id = ObjectId(),
                 content = base64_images[0],
             ),
