@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from typing import List, Union
 from sentence_transformers import SentenceTransformer
@@ -70,13 +71,14 @@ class AIKI:
         pick_up_data = []
         for item in result_data.items:
             if item.modality == ModalityType.IMAGE:
-                pick_up_data.append({"url": item.url, "summary": item.metadata.get("summary", "")})
+                pick_up_data.append({"id": item._id, "url": item.url, "summary": item.metadata.get("summary", "")})
             elif item.modality == ModalityType.TEXT:
-                pick_up_data.append(item.content)
+                pick_up_data.append({"id": item._id, "content": item.content})
         return pick_up_data
         
     def _index(self, data: str):
         image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff')
+        retrieval_data = None
         if os.path.isfile(data) and data.lower().endswith(image_extensions):
             print(f"Processing image file: {data}")
             retrieval_data = RetrievalData(
@@ -84,10 +86,12 @@ class AIKI:
                     ImageModalityData(
                         url=data,
                         _id=ObjectId(),
+                        metadata={
+                            "timestamp": datetime.now().timestamp(),
+                        }
                 ),
                 ]
             )
-            self.multimodal_indexer.index(retrieval_data)
         else:
             print(f"Processing non-image data: {data}")
             retrieval_data = RetrievalData(
@@ -95,6 +99,10 @@ class AIKI:
                     TextModalityData(
                         content=data,
                         _id=ObjectId(),
+                        metadata={
+                            "timestamp": datetime.now().timestamp(),
+                        }
                 ),
                 ]
             )
+        self.multimodal_indexer.index(retrieval_data)

@@ -59,13 +59,11 @@ class APISummaryGenerator(BaseSummaryGenerator):
         item = data
         if item.modality not in [ModalityType.TEXT, ModalityType.IMAGE]:
             raise ValueError(f"{self.item.modality}.genearte_summary(). There is no such modal data processing method")
-        
         content_type = "image_url" if item.modality == ModalityType.IMAGE else "text"
         content_value = {
             "url": f"data:image/jpeg;base64,{item.content}"
-        } if item.modality == ModalityType.TEXT else item.content
-        
-        prompt_text = "What is in this image?" if item.modality == ModalityType.IMAGE else "Please summarize this text."
+        } if item.modality == ModalityType.IMAGE else {"text": item.content}
+        prompt_text = "What is in this image? Response with Chinese, thx." if item.modality == ModalityType.IMAGE else "Please summarize this text in Chinese."
         
         response = self.client.chat.completions.create(
             model=self.model,
@@ -86,6 +84,7 @@ class APISummaryGenerator(BaseSummaryGenerator):
             ],
         )
         summary = response.choices[0].message.content
+        print(summary)
         return summary
 
 class BaseIndexer(ABC):
@@ -121,13 +120,12 @@ class ImageIndexer(BaseIndexer):
         for retrieval_data in data.items:
             if retrieval_data.__class__ != ImageModalityData:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retrieval_data.__class__.__name__}")
-            id = ObjectId()
             if "summary" not in retrieval_data.metadata:
                 summary = self.summary_generator.generate_summary(retrieval_data)
             else:
                 summary = retrieval_data.metadata["summary"]
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=retrieval_data.content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
-            image_data = ImageModalityData(_id=id, content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=retrieval_data._id, url=retrieval_data.url, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
+            image_data = ImageModalityData(_id=retrieval_data._id, url=retrieval_data.url, metadata={"timestamp": retrieval_data.metadata.get("timestamp")})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
@@ -137,6 +135,8 @@ class MultimodalIndexer(BaseIndexer):
         self.image_indexer = ImageIndexer(chunker=chunker, summary_generator=summary_generator, processor = processor, model_path=model_path)
     
     def index(self, data: RetrievalData):
+        if data is None:
+            raise ValueError("Data cannot be None")
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
@@ -188,7 +188,7 @@ class ClipIndexer(BaseIndexer):
                     # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
                     self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
             elif item.modality == ModalityType.IMAGE:
-                cur_id = ObjectId()
+                cur_id = item._id
                 retrieval_data = RetrievalData(
                             items=[ImageModalityData(
                                 _id=cur_id,
