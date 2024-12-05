@@ -82,7 +82,7 @@ class AIKI:
             retrieval_data = RetrievalData(
                 items=[
                     ImageModalityData(
-                        url=data,
+                        _url=data,
                         _id=ObjectId(),
                 ),
                 ]

@@ -13,49 +13,10 @@ from bson import ObjectId
 from aiki.aiki import AIKI
 
 a_k_ = AIKI()
+
+print(a_k_.index("我上周出去遛狗了"))
+image_path = "/home/PJLAB/leishanzhe/repo/aiki_demo/AIKI/resource/source/imgs/外滩小巷.jpg"
+print(a_k_.index(image_path))
+
 print(a_k_.retrieve("我上周出去遛狗了么", num=2))
-
-
-# try:
-#     model = SentenceTransformer('lier007/xiaobu-embedding-v2')
-# except Exception as e:
-#     print(f"Error loading model: {e}")
-#     # Optionally, load a local model or take other actions
-
-# embedding_func = model.encode
-# name = "xiaobu_summary"
-# processor = MultiModalProcessor()
-# source_db = JSONFileDB(f"./db/{name}/{name}.json")
-# chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
-
-# processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
-# processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-# processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
-
-# dense_retriever = DenseRetriever(processor=processor)
-
-# ### retrieve
-# input_data = ""
-
-# retrieval_data = RetrievalData(items=[
-#         TextModalityData(
-#             content="我上周出去遛狗了么",
-#             _id=ObjectId(),
-#             metadata={}
-#         )
-#     ])
-
-# result = dense_retriever.search(retrieval_data, num=3)
-
-# for item in result.items:
-#     # image summary
-#     base64_encoded_image = item.content
-#     image_data = base64.b64decode(base64_encoded_image)
-#     if not os.path.exists('./tmp'):
-#         os.makedirs('./tmp')
-
-#     with open(f"./tmp/{item._id}.jpg", "wb") as image_file:
-#         image_file.write(image_data)
-#         print(item.metadata['summary'])
-        
-# ### index
+print(a_k_.retrieve("行人骑自行车", num=2))
