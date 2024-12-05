@@ -40,7 +40,7 @@ export OPENAI_API_KEY="your_openai_api_key"
 import os
 from aiki.aiki import AIKI
 
-# initail your lib
+# initialize your lib
 a_k_ = AIKI(db_name = "flick")
 
 # add text data
