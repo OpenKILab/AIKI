@@ -21,7 +21,7 @@ class EmbeddingModel:
 
 class JinnaClip(EmbeddingModel):
     def __init__(self):
-        self.device = torch.device("cuda")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.embedding_model = AutoModel.from_pretrained(
             'jinaai/jina-clip-v2', 
             trust_remote_code=True, 
