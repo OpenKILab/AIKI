@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional, Type
 from bson import ObjectId
 from enum import Enum
@@ -17,7 +17,7 @@ class BaseModalityData(Serializable):
     _id: ObjectId
     modality: ModalityType = ModalityType.UNKNOWN
     content: Any = None
-    metadata: Optional[Dict[str, SerializableValue]] = None
+    metadata: Dict[str, SerializableValue] = field(default_factory=dict)
 
 class BaseModalityHandler(ABC):
     def __init__(self, database):
