@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import asyncio
 from dataclasses import dataclass, field
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional, Type
 from bson import ObjectId
@@ -46,4 +47,10 @@ class MultiModalProcessor:
         handler = self._get_handler(modality_type)
         if not hasattr(handler, operation.value):
             raise ValueError(f"Operation {operation} not supported for modality: {modality_type}")
-        return getattr(handler, operation.value)(*args, **kwargs)
+        
+        operation_func = getattr(handler, operation.value)
+        if asyncio.iscoroutinefunction(operation_func):
+            return asyncio.run(operation_func(*args, **kwargs))
+        else:
+            return operation_func(*args, **kwargs)
+    

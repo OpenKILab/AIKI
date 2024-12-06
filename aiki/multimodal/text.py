@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, ModalityType, BaseModalityHandlerOP
 # from aiki.database import BaseKVDatabase
@@ -16,12 +17,11 @@ class TextModalityData(BaseModalityData):
     content: str = ""
 
 class TextHandler(BaseModalityHandler):
-
     def mget(self, ids: List[ObjectId]) -> List[TextModalityData]:
-        return self.database.mget(ids)
+        return asyncio.run(self.database.mget(ids))
 
     def mset(self, data_list: List[TextModalityData]):
-        self.database.mset(data_list)
+        asyncio.run(self.database.mset(data_list))
 
     def mdelete(self, ids):
-        self.database.mdelete(ids)
+        asyncio.run(self.database.mdelete(ids))
