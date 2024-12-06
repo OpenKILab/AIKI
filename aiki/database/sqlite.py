@@ -7,6 +7,7 @@ from aiki.multimodal import BaseModalityData
 from bson import ObjectId
 from typing import List
 import json
+import logging
 
 from aiki.multimodal.base import ModalityType
 from aiki.multimodal.image import ImageModalityData
@@ -39,16 +40,17 @@ class SQLiteDB(BaseRelDatabase):
     async def mset(self, data_list: List[BaseModalityData]):
         async with in_transaction() as conn:
             for data in data_list:
+                _id = data._id
                 await ModalityData.create(
-                    id=data._id.binary,
-                    modality=data.modality.name,
+                    id=sqlite3.Binary(data._id.binary),
+                    modality=data.modality.value,
                     content=data.content.encode('utf-8') if data.content else None,
                     url=getattr(data, 'url', None),
                     metadata=data.metadata if hasattr(data, 'metadata') else None,
                     colbert_tensor=data.colbert_tensor.tobytes() if hasattr(data, 'colbert_tensor') else None
                 )
     
-    async def mget(self, ids: List[ObjectId]):
+    async def mget(self, ids: List[ObjectId]) -> List[BaseModalityData]:
         results = []
         for _id in ids:
             row = await ModalityData.filter(id=_id.binary).first()
@@ -81,7 +83,10 @@ class SQLiteDB(BaseRelDatabase):
     async def mdelete(self, ids: List[ObjectId]):
         async with in_transaction() as conn:
             for _id in ids:
-                await ModalityData.filter(id=_id.binary).delete()
+                await conn.execute_query(
+                    'DELETE FROM "modality_data" WHERE "id"=?',
+                    (sqlite3.Binary(_id.binary),)  # 使用参数化查询传递二进制数据
+                )
     
     async def close(self):
         await Tortoise.close_connections()
