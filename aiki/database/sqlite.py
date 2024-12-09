@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sqlite3
 from tortoise import Tortoise, fields, models
 from tortoise.transactions import in_transaction
@@ -14,7 +15,7 @@ from aiki.multimodal.image import ImageModalityData
 from aiki.multimodal.text import TextModalityData
 
 class ModalityData(models.Model):
-    id = fields.BinaryField(pk=True)
+    id = fields.BinaryField(primary_key=True)
     modality = fields.CharField(max_length=255)
     content = fields.BinaryField(null=True)
     url = fields.CharField(max_length=255, null=True)
@@ -26,7 +27,8 @@ class ModalityData(models.Model):
     
 class SQLiteDB(BaseRelDatabase):
     def __init__(self, db_url: str):
-        self.db_url = db_url
+        self.db_path = os.path.join(os.getcwd(), 'db', f"{db_url}.db")
+        self.db_url = f"sqlite://{self.db_path}"
         asyncio.run(self._init())
         
     async def _init(self):
@@ -42,7 +44,7 @@ class SQLiteDB(BaseRelDatabase):
             for data in data_list:
                 _id = data._id
                 await ModalityData.create(
-                    id=sqlite3.Binary(data._id.binary),
+                    id=sqlite3.Binary(_id.binary),
                     modality=data.modality.value,
                     content=data.content.encode('utf-8') if data.content else None,
                     url=getattr(data, 'url', None),
@@ -53,6 +55,8 @@ class SQLiteDB(BaseRelDatabase):
     async def mget(self, ids: List[ObjectId]) -> List[BaseModalityData]:
         results = []
         for _id in ids:
+            if isinstance(_id, str):
+                _id = ObjectId(_id)
             row = await ModalityData.filter(id=_id.binary).first()
             if row:
                 results.append(self._row_to_data(row))

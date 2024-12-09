@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
+from aiki.database.sqlite import SQLiteDB
 from aiki.embedding_model.embedding_model import ColPaliModel, JinnaClip, ColPali
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
@@ -193,12 +194,11 @@ class ClipIndexer(BaseIndexer):
                             items=[ImageModalityData(
                                 _id=cur_id,
                                 url=item.url,
-                                content=item.content,
                                 metadata=item.metadata,
                             )]
                         )
                 embeddings = self.clip_model.embed(retrieval_data)
-                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, url=item.url, metadata=item.metadata)])
+                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, url=item.url, metadata=item.metadata)])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value, **item.metadata})])
     
     def batch_index(self, data: RetrievalData):
@@ -257,15 +257,15 @@ def encode_image_to_base64(file_path: str) -> str:
 # Example usage
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    name = "colpali"
-    source_db = JSONFileDB(f"./db/{name}/{name}.json")
+    name = "wiki_clip"
+    source_db = SQLiteDB(f"{name}")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
     
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
     processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
     processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_functions.DefaultEmbeddingFunction()))
     
-    multimodal_indexer = ColPaliIndexer(processor=processor)
+    multimodal_indexer = ClipIndexer(processor=processor)
     
     base_path = os.getcwd()
 
@@ -278,6 +278,7 @@ if __name__ == "__main__":
             ImageModalityData(
                 content= f"""{encoded_image}""",
                 _id = ObjectId(),
+                url = file_path,
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
         ]
