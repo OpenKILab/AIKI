@@ -9,7 +9,8 @@ from abc import ABC, abstractmethod
 from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
-from aiki.embedding_model.embedding_model import JinnaClip
+from aiki.database.sqlite import SQLiteDB
+from aiki.embedding_model.embedding_model import ColPaliModel, JinnaClip, ColPali
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 
@@ -59,13 +60,11 @@ class APISummaryGenerator(BaseSummaryGenerator):
         item = data
         if item.modality not in [ModalityType.TEXT, ModalityType.IMAGE]:
             raise ValueError(f"{self.item.modality}.genearte_summary(). There is no such modal data processing method")
-        
         content_type = "image_url" if item.modality == ModalityType.IMAGE else "text"
         content_value = {
             "url": f"data:image/jpeg;base64,{item.content}"
-        } if item.modality == ModalityType.TEXT else item.content
-        
-        prompt_text = "What is in this image?" if item.modality == ModalityType.IMAGE else "Please summarize this text."
+        } if item.modality == ModalityType.IMAGE else {"text": item.content}
+        prompt_text = "What is in this image? Response with Chinese, thx." if item.modality == ModalityType.IMAGE else "Please summarize this text in Chinese."
         
         response = self.client.chat.completions.create(
             model=self.model,
@@ -86,6 +85,7 @@ class APISummaryGenerator(BaseSummaryGenerator):
             ],
         )
         summary = response.choices[0].message.content
+        print(summary)
         return summary
 
 class BaseIndexer(ABC):
@@ -121,13 +121,12 @@ class ImageIndexer(BaseIndexer):
         for retrieval_data in data.items:
             if retrieval_data.__class__ != ImageModalityData:
                 raise ValueError(f"{self.__class__.__name__}.index(). Unsupported data type: {retrieval_data.__class__.__name__}")
-            id = ObjectId()
             if "summary" not in retrieval_data.metadata:
                 summary = self.summary_generator.generate_summary(retrieval_data)
             else:
                 summary = retrieval_data.metadata["summary"]
-            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=id, content=retrieval_data.content, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
-            image_data = ImageModalityData(_id=id, content=summary, metadata={"timestamp": retrieval_data.metadata["timestamp"]})
+            self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=retrieval_data._id, url=retrieval_data.url, metadata={"summary": summary, "timestamp": retrieval_data.metadata["timestamp"], "parent": [], "children": []})])
+            image_data = ImageModalityData(_id=retrieval_data._id, url=retrieval_data.url, metadata={"timestamp": retrieval_data.metadata.get("timestamp")})
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
@@ -137,6 +136,8 @@ class MultimodalIndexer(BaseIndexer):
         self.image_indexer = ImageIndexer(chunker=chunker, summary_generator=summary_generator, processor = processor, model_path=model_path)
     
     def index(self, data: RetrievalData):
+        if data is None:
+            raise ValueError("Data cannot be None")
         text_retrieval_data = RetrievalData(items=[])
         image_retrieval_data = RetrievalData(items=[])
         for retrieval_data in data.items:
@@ -188,17 +189,16 @@ class ClipIndexer(BaseIndexer):
                     # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
                     self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
             elif item.modality == ModalityType.IMAGE:
-                cur_id = ObjectId()
+                cur_id = item._id
                 retrieval_data = RetrievalData(
                             items=[ImageModalityData(
                                 _id=cur_id,
                                 url=item.url,
-                                content=item.content,
                                 metadata=item.metadata,
                             )]
                         )
                 embeddings = self.clip_model.embed(retrieval_data)
-                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, url=item.url, metadata=item.metadata)])
+                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, url=item.url, metadata=item.metadata)])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value, **item.metadata})])
     
     def batch_index(self, data: RetrievalData):
@@ -257,8 +257,8 @@ def encode_image_to_base64(file_path: str) -> str:
 # Example usage
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    name = "test"
-    source_db = JSONFileDB(f"./db/{name}/{name}.json")
+    name = "wiki_clip"
+    source_db = SQLiteDB(f"{name}")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
     
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
@@ -278,6 +278,7 @@ if __name__ == "__main__":
             ImageModalityData(
                 content= f"""{encoded_image}""",
                 _id = ObjectId(),
+                url = file_path,
                 metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
         ]

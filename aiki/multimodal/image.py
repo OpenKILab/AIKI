@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 import os
 from aiki.multimodal.base import BaseModalityData, BaseModalityHandler, ModalityType, BaseModalityHandlerOP
@@ -72,10 +73,10 @@ class ImageHandler(BaseModalityHandler):
         super().__init__(database)
         
     def mget(self, ids: List[ObjectId]) -> List[ImageModalityData]:
-        return self.database.mget(ids)
+        return asyncio.run(self.database.mget(ids))
 
     def mset(self, data_list: List[ImageModalityData]):
-        self.database.mset(data_list)
+        asyncio.run(self.database.mset(data_list))
 
     def mdelete(self, ids):
-        self.database.mdelete(ids)
+        asyncio.run(self.database.mdelete(ids))
