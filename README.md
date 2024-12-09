@@ -23,7 +23,12 @@ conda activate aiki
 ```
 2. Install [poetry](https://python-poetry.org/docs/#installation)
 
-3. Config
+3. Install dependence
+```shell
+poetry install
+```
+
+4. Config
 ```bash
 export OPENAI_API_KEY="your_openai_api_key"
 ```
