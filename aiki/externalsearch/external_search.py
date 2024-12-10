@@ -6,7 +6,7 @@ import time
 class ExternalSearch:
     def __init__(self, api_key: str, retry_attempts: int = 3):
         """
-        初始化 OmniSearch 模块。
+        初始化 Search 模块。
         :param api_key: SerpAPI 的 API 密钥，用于授权搜索请求。
         :param retry_attempts: 搜索失败时的最大重试次数。
 
@@ -210,7 +210,7 @@ class ExternalSearch:
             "image_url": "http://example.com/image.jpg"
         }
         
-        我们将基于text执行文本搜索和图片搜索（image_text），基于image_url执行反向图片搜索，然后将结果融合。
+        基于text执行文本搜索和图片搜索(image_text),基于image_url执行反向图片搜索,然后将结果融合。
         
         :param inputs: 包含文本及图片URL的字典
         :return: 包含多模态结果的字典。
@@ -238,7 +238,7 @@ class ExternalSearch:
 
     def populate_retrieval_data_with_omni_results(self, retrieval_data: RetrievalData, external_search_results: Dict[str, Any]) -> None:
         """
-        将Omnisearch的结果填充回RetrievalData中对应的模态数据项里。
+        将Search的结果填充回RetrievalData中对应的模态数据项里。
 
         :param retrieval_data: 一个 RetrievalData 实例，其中的 items 包含 TextModalityData、ImageModalityData 等。
         :param omni_results: Omnisearch搜索出来的结果字典，格式如下：
