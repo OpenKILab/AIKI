@@ -47,3 +47,19 @@ class BaseVectorDatabase(BaseDatabase):
     @abstractmethod
     def query(self, query_embedding: List[Vector], top_k) -> List[ObjectId]:
         pass
+    
+class BaseRelDatabase(BaseDatabase):
+    def __init__(self):
+        super().__init__()
+
+    @abstractmethod
+    def mget(self, ids: List[ObjectId]):
+        pass
+
+    @abstractmethod
+    def mset(self, data_list: List[BaseModalityData]):
+        pass
+
+    @abstractmethod
+    def mdelete(self, ids: List[ObjectId]):
+        pass

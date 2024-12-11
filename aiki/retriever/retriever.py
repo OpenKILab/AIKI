@@ -5,6 +5,7 @@ from typing import List, Dict, Protocol
 from bson import ObjectId
 from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
+from aiki.database.sqlite import SQLiteDB
 from aiki.embedding_model.embedding_model import EmbeddingModel, JinnaClip
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalType, RetrievalItem
 from aiki.multimodal.base import ModalityType, MultiModalProcessor
@@ -131,8 +132,8 @@ class DenseRetriever(BaseRetriever):
         
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    name = "jina_clip"
-    source_db = JSONFileDB(f"./db/{name}/{name}.json")
+    name = "wiki_clip"
+    source_db = SQLiteDB(f"{name}")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
 
     processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
@@ -152,5 +153,5 @@ if __name__ == "__main__":
     ])
     result = dense_retriever.search(retrieval_data, num=10)
     for item in result.items:
-        print(item.metadata["summary"])
+        print(item)
         

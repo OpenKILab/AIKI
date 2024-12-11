@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+import asyncio
+from dataclasses import dataclass, field
 from typing import Generic, TypeVar, Union, Dict, Any, List, TypedDict, Literal, Optional, Type
 from bson import ObjectId
 from enum import Enum
@@ -17,7 +18,7 @@ class BaseModalityData(Serializable):
     _id: ObjectId
     modality: ModalityType = ModalityType.UNKNOWN
     content: Any = None
-    metadata: Optional[Dict[str, SerializableValue]] = None
+    metadata: Dict[str, SerializableValue] = field(default_factory=dict)
 
 class BaseModalityHandler(ABC):
     def __init__(self, database):
@@ -46,4 +47,10 @@ class MultiModalProcessor:
         handler = self._get_handler(modality_type)
         if not hasattr(handler, operation.value):
             raise ValueError(f"Operation {operation} not supported for modality: {modality_type}")
-        return getattr(handler, operation.value)(*args, **kwargs)
+        
+        operation_func = getattr(handler, operation.value)
+        if asyncio.iscoroutinefunction(operation_func):
+            return asyncio.run(operation_func(*args, **kwargs))
+        else:
+            return operation_func(*args, **kwargs)
+    
