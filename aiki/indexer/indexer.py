@@ -275,11 +275,9 @@ if __name__ == "__main__":
     
     retrieval_data = RetrievalData(
         items=[
-            ImageModalityData(
-                content= f"""{encoded_image}""",
+            TextModalityData(
+                content= f"""外滩小巷""",
                 _id = ObjectId(),
-                url = file_path,
-                metadata={"timestamp": int((datetime.now() - timedelta(days = 7)).timestamp()), "summary": "test"}
         ),
         ]
     )

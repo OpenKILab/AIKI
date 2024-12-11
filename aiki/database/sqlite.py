@@ -27,8 +27,7 @@ class ModalityData(models.Model):
     
 class SQLiteDB(BaseRelDatabase):
     def __init__(self, db_url: str):
-        self.db_path = os.path.join(os.getcwd(), 'db', f"{db_url}.db")
-        self.db_url = f"sqlite://{self.db_path}"
+        self.db_url = f"sqlite://{db_url}"
         asyncio.run(self._init())
         
     async def _init(self):
@@ -43,10 +42,13 @@ class SQLiteDB(BaseRelDatabase):
         async with in_transaction() as conn:
             for data in data_list:
                 _id = data._id
+                content = data.content
+                if isinstance(content, str):
+                    content = content.encode('utf-8')
                 await ModalityData.create(
                     id=sqlite3.Binary(_id.binary),
                     modality=data.modality.value,
-                    content=data.content.encode('utf-8') if data.content else None,
+                    content=content,
                     url=getattr(data, 'url', None),
                     metadata=data.metadata if hasattr(data, 'metadata') else None,
                     colbert_tensor=data.colbert_tensor.tobytes() if hasattr(data, 'colbert_tensor') else None
@@ -70,7 +72,7 @@ class SQLiteDB(BaseRelDatabase):
             return ImageModalityData(
                 _id=ObjectId(row.id),
                 modality=modality_type,
-                content=row.content.decode('utf-8') if row.content else None,
+                content=row.content.decode('utf-8') if isinstance(row.content, str) else row.content,
                 url=row.url,
                 metadata=row.metadata
             )

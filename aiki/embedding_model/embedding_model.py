@@ -1,7 +1,7 @@
 import base64
 from datetime import datetime
 import io
-from typing import List
+from typing import List, cast
 from transformers import AutoModel, AutoConfig
 import os
 from dotenv import load_dotenv
@@ -17,6 +17,7 @@ from aiki.multimodal.text import TextModalityData
 from aiki.multimodal.types import Vector
 from colpali_engine.models import ColPali, ColPaliProcessor
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from sentence_transformers import SentenceTransformer
 from numpy.typing import NDArray
 from bson import ObjectId
 
@@ -27,33 +28,36 @@ class EmbeddingModel:
 class JinnaClip(EmbeddingModel):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.embedding_model = AutoModel.from_pretrained(
+        self.embedding_model = SentenceTransformer(
             'jinaai/jina-clip-v2', 
             trust_remote_code=True, 
-            device_map=self.device
         )
+        self.embedding_model.to(self.device)  # Move the model to the specified device
         self.truncate_dim = 512
     
     def text_embedding_func(self, data:List) -> List:
         embeddings = []
         for item in data:
-            embeddings.append(self.embedding_model.encode_text(item, truncate_dim=self.truncate_dim))
+            embeddings.append(self.embedding_model.encode(item, truncate_dim=self.truncate_dim, show_progress_bar=False))
         return embeddings
     
     def image_embedding_func(self, data:List) -> List:
-        # data : base64 encoded image
+        # data : base64 encoded image / bytes image
         embeddings = []
         for item in data:
-            base64_string = item
-            image_data = base64.b64decode(base64_string)
-            image_stream = io.BytesIO(image_data)
+            if isinstance(item, str):
+                base64_string = item
+                image_data = base64.b64decode(base64_string)
+                image_stream = io.BytesIO(image_data)
+            elif isinstance(item, bytes):
+                image_stream = item
             image = Image.open(image_stream)
-            embeddings.append(self.embedding_model.encode_image(image, truncate_dim=self.truncate_dim))
+            embeddings.append(self.embedding_model.encode(image, truncate_dim=self.truncate_dim, show_progress_bar=False))
             
         return embeddings
 
     def batch_image_embedding_func(self, data:List) -> List:
-        return self.embedding_model.encode_image(data, truncate_dim=self.truncate_dim)
+        return self.embedding_model.encode(data, truncate_dim=self.truncate_dim)
     
     def embed(self, data: RetrievalData) -> List[Vector]:
         embeddings = []
@@ -66,11 +70,24 @@ class JinnaClip(EmbeddingModel):
         return embeddings
 
     def batch_embed(self, data: RetrievalData) -> List[Vector]:
-        embeddings = []
-        urls = []
-        for item in data.items:
-            urls.append(item.url)
-        embeddings = self.batch_image_embedding_func(urls)
+        embeddings = [None] * len(data.items)  # Initialize with placeholders
+        image_data = [(i, item.url) for i, item in enumerate(data.items) if item.modality == ModalityType.IMAGE]
+        text_data = [(i, item.content) for i, item in enumerate(data.items) if item.modality == ModalityType.TEXT]
+
+        # Process image embeddings
+        if image_data:
+            indices, contents = zip(*image_data)
+            image_embeddings = self.batch_image_embedding_func(list(contents))
+            for idx, embedding in zip(indices, image_embeddings):
+                embeddings[idx] = embedding
+
+        # Process text embeddings
+        if text_data:
+            indices, contents = zip(*text_data)
+            text_embeddings = self.text_embedding_func(list(contents))
+            for idx, embedding in zip(indices, text_embeddings):
+                embeddings[idx] = embedding
+
         return embeddings
     
 class ColPaliModel(EmbeddingModel):
