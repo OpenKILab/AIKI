@@ -35,7 +35,7 @@ proxy_on()
 ak = AIKI(db_path="/mnt/hwfile/kilab/leishanzhe/db/wiki/")
 proxy_off()
 
-batch_size = 64
+batch_size = 1024
 batch_data = []
 
 path = '/mnt/hwfile/kilab/leishanzhe/data/wiki'

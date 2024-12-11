@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import os
 from typing import List, Union
@@ -5,7 +6,7 @@ from aiki.database.sqlite import SQLiteDB
 from aiki.embedding_model.embedding_model import JinnaClip
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
-from aiki.database.chroma import ChromaDB
+from aiki.database.milvus import MilvusDB
 from aiki.database.json_file import JSONFileDB
 from aiki.indexer.indexer import ClipIndexer, MultimodalIndexer
 from aiki.modal.retrieval_data import RetrievalData
@@ -32,18 +33,21 @@ class AIKI:
             # Optionally, load a local model or take other actions
 
         embedding_func = model.encode
-        processor = MultiModalProcessor()
+        self.processor = MultiModalProcessor()
         if not os.path.exists(db_path):
             os.makedirs(db_path, exist_ok=True)
         source_db = SQLiteDB(os.path.join(db_path, "source"))
-        chroma_db = ChromaDB(collection_name=f"index", persist_directory=os.path.join(db_path, "index"))
+        chroma_db = MilvusDB(collection_name=f"index", persist_directory=os.path.join(db_path, "index"))
 
-        processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
-        processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-        processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
+        self.processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+        self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+        self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
         
-        self.dense_retriever = DenseRetriever(processor=processor, embedding_model = JinnaClip())
-        self.multimodal_indexer = ClipIndexer(processor=processor)
+        self.dense_retriever = DenseRetriever(processor=self.processor, embedding_model = JinnaClip())
+        self.multimodal_indexer = ClipIndexer(processor=self.processor)
+        
+    async def _start_processor_worker(self):
+        await self.processor.start_worker()
     
     def load_config(self):
         # ignore log
@@ -103,7 +107,7 @@ class AIKI:
                         url=data,
                         _id=ObjectId(),
                         metadata={
-                            "timestamp": datetime.now().timestamp(),
+                            "timestamp": int(datetime.now().timestamp()),
                         }
                 ),
                 ]
@@ -116,7 +120,7 @@ class AIKI:
                         content=data,
                         _id=ObjectId(),
                         metadata={
-                            "timestamp": datetime.now().timestamp(),
+                            "timestamp": int(datetime.now().timestamp()),
                         }
                 ),
                 ]

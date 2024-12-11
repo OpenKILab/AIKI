@@ -9,6 +9,7 @@ from bson import ObjectId
 from typing import List
 import json
 import logging
+import time
 
 from aiki.multimodal.base import ModalityType
 from aiki.multimodal.image import ImageModalityData
@@ -39,20 +40,24 @@ class SQLiteDB(BaseRelDatabase):
         await Tortoise.generate_schemas()
         
     async def mset(self, data_list: List[BaseModalityData]):
-        async with in_transaction() as conn:
-            for data in data_list:
-                _id = data._id
-                content = data.content
-                if isinstance(content, str):
-                    content = content.encode('utf-8')
-                await ModalityData.create(
-                    id=sqlite3.Binary(_id.binary),
-                    modality=data.modality.value,
-                    content=content,
-                    url=getattr(data, 'url', None),
-                    metadata=data.metadata if hasattr(data, 'metadata') else None,
-                    colbert_tensor=data.colbert_tensor.tobytes() if hasattr(data, 'colbert_tensor') else None
-                )
+        start_time = time.time()  # 记录开始时间
+        modality_data_objects = []
+        for data in data_list:
+            _id = data._id
+            content = data.content
+            if isinstance(content, str):
+                content = content.encode('utf-8')
+            modality_data_objects.append(ModalityData(
+                id=sqlite3.Binary(_id.binary),
+                modality=data.modality.value,
+                content=content,
+                url=getattr(data, 'url', None),
+                metadata=data.metadata if hasattr(data, 'metadata') else None,
+                colbert_tensor=data.colbert_tensor.tobytes() if hasattr(data, 'colbert_tensor') else None
+            ))
+        await ModalityData.bulk_create(modality_data_objects)
+        end_time = time.time()  # 记录结束时间
+        logging.info(f"SQLite mset operation took {end_time - start_time} seconds")
     
     async def mget(self, ids: List[ObjectId]) -> List[BaseModalityData]:
         results = []

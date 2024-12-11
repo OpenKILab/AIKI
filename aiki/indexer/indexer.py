@@ -202,12 +202,36 @@ class ClipIndexer(BaseIndexer):
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value, **item.metadata})])
     
     def batch_index(self, data: RetrievalData):
+        batch_source_data = []
+        batch_vector_data = []
+        new_items = []
+        for item in data.items:
+            if not item.metadata:
+                item.metadata = {
+                            "timestamp": int(datetime.now().timestamp()),
+                            "summary": ""
+                            }
+            if item.modality == ModalityType.TEXT:
+                chunks = self.chunker.chunk(item.content)
+                for content in chunks:
+                    cur_id = ObjectId()
+                    retrieval_data = TextModalityData(
+                            _id=cur_id,
+                            content=content,
+                            metadata=item.metadata,
+                        )
+                    new_items.append(retrieval_data)
+            elif item.modality == ModalityType.IMAGE:
+                new_items.append(item)
+        data.items = new_items
+        
         start_time = time.time()  # Start timing
         batch_embeddings = self.clip_model.batch_embed(data)
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time
         print(f"Time taken for batch_embed: {elapsed_time:.4f} seconds")
         index = 0
+        
         for item in data.items:
             if not item.metadata:
                 # TODO: set timestamp, summary to default
@@ -216,20 +240,13 @@ class ClipIndexer(BaseIndexer):
                             "summary": ""
                             }
             if item.modality == ModalityType.TEXT:
-                chunks = self.chunker.chunk(item.content)
-                for data in chunks:
-                    cur_id = ObjectId()
-                    retrieval_data = RetrievalData(
-                        items=[TextModalityData(
-                            _id=cur_id,
-                            content=data,
-                            metadata=item.metadata["timestamp"],
-                        )]
-                    )
-                    embeddings = self.clip_model.embed(retrieval_data)
-                    self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
-                    # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
-                    self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
+                embedding = batch_embeddings[index]
+                index = index + 1
+                batch_source_data.append(TextModalityData(_id=item._id, content=item.content, metadata={"summary": "","timestamp": item.metadata["timestamp"]}))
+                # self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=item._id, content=item.content, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
+                # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
+                batch_vector_data.append(VectorModalityData(_id=item._id, content=embedding, metadata={"__modality": item.modality.value}))
+                # self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=item._id, content=embedding, metadata={"__modality": item.modality.value})])
             elif item.modality == ModalityType.IMAGE:
                 cur_id = ObjectId()
                 retrieval_data = RetrievalData(
@@ -242,8 +259,15 @@ class ClipIndexer(BaseIndexer):
                         )
                 embedding = batch_embeddings[index]
                 index = index + 1
-                self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, content=item.content, url=item.url, metadata=item.metadata)])
-                self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embedding, metadata={"__modality": item.modality.value, **item.metadata})])
+                batch_source_data.append(ImageModalityData(_id=item._id, content=item.content, url=item.url, metadata=item.metadata))
+                # self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=item._id, content=item.content, url=item.url, metadata=item.metadata)])
+                batch_vector_data.append(VectorModalityData(_id=item._id, content=embedding, metadata={"__modality": item.modality.value, **item.metadata}))
+                # self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=item._id, content=embedding, metadata={"__modality": item.modality.value, **item.metadata})])
+        
+        # self.processor.execute_operation_queue(ModalityType.IMAGE, ImageHandlerOP.MSET, batch_source_data)
+        # self.processor.execute_operation_queue(ModalityType.VECTOR, VectorHandlerOP.MSET, batch_vector_data)
+        self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, batch_source_data)
+        self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, batch_vector_data)
         
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time

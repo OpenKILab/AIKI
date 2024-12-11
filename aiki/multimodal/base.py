@@ -6,7 +6,6 @@ from bson import ObjectId
 from enum import Enum
 from aiki.serialization import SerializableValue, Serializable
 
-
 class ModalityType(Enum):
     TEXT = "text"
     IMAGE = "image"
@@ -53,4 +52,13 @@ class MultiModalProcessor:
             return asyncio.run(operation_func(*args, **kwargs))
         else:
             return operation_func(*args, **kwargs)
+        
+    def execute_operation_queue(self, modality_type: ModalityType, operation: BaseModalityHandlerOP, *args, **kwargs):
+        """Queue a specific modality operation to Celery"""
+        handler = self._get_handler(modality_type)
+        if not hasattr(handler, operation.value):
+            raise ValueError(f"Operation {operation} not supported for modality: {modality_type}")
+
+        # Queue the task
+        return operation_task.delay(handler, operation.value, *args, **kwargs)
     
