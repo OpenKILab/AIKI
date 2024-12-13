@@ -116,8 +116,8 @@ class MilvusDB(BaseVectorDatabase):
             query_results.append(query_result)
         return query_results
 
-if __name__ == "__main__":
-    from pymilvus import MilvusClient
+# if __name__ == "__main__":
+#     from pymilvus import MilvusClient
 
-    client = MilvusClient("./milvus_demo.db")
+#     client = MilvusClient("./milvus_demo.db")
 

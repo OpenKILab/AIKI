@@ -10,7 +10,7 @@ from aiki.database import BaseKVDatabase, BaseVectorDatabase
 from aiki.database import JSONFileDB
 from aiki.database.chroma import ChromaDB
 from aiki.database.sqlite import SQLiteDB
-from aiki.embedding_model.embedding_model import ColPaliModel, JinnaClip, ColPali
+from aiki.embedding_model.embedding_model import ColPaliModel, JinnaClip, ColPali, VitClip
 from aiki.indexer.chunker import BaseChunker, FixedSizeChunker
 from aiki.modal.retrieval_data import KVSchema, RetrievalData, RetrievalItem, RetrievalType
 
@@ -263,7 +263,8 @@ class ClipIndexer(BaseIndexer):
                 # self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=item._id, content=item.content, url=item.url, metadata=item.metadata)])
                 batch_vector_data.append(VectorModalityData(_id=item._id, content=embedding, metadata={"__modality": item.modality.value, **item.metadata}))
                 # self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=item._id, content=embedding, metadata={"__modality": item.modality.value, **item.metadata})])
-        
+        print("count of batch_embeddings:")
+        print(len(batch_embeddings))
         # self.processor.execute_operation_queue(ModalityType.IMAGE, ImageHandlerOP.MSET, batch_source_data)
         # self.processor.execute_operation_queue(ModalityType.VECTOR, VectorHandlerOP.MSET, batch_vector_data)
         self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, batch_source_data)

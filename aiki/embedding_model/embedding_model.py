@@ -38,6 +38,10 @@ class JinnaClip(EmbeddingModel):
         print("============================")
         self.embedding_model.to(self.device)  # Move the model to the specified device
         self.truncate_dim = 512
+        self.active_encode()
+        
+    def active_encode(self):
+        self.embedding_model.encode("active yourself", truncate_dim=self.truncate_dim)
     
     def text_embedding_func(self, data:List) -> List:
         return self.embedding_model.encode(data, truncate_dim=self.truncate_dim)
@@ -152,8 +156,9 @@ class VitClip(EmbeddingModel):
     
     def text_embedding_func(self, data:List) -> List:
         inputs = self.processor(text=data, return_tensors="pt", padding=True)
-        # TODO: check type of outputs
-        outputs = self.model(**inputs)
+        # tensor
+        outputs = self.model.get_text_features(**inputs)
+        outputs = outputs.tolist()
         return outputs
     
     def image_embedding_func(self, data:List) -> List:
@@ -169,8 +174,9 @@ class VitClip(EmbeddingModel):
             image = Image.open(image_stream)
             imgs.append(image)
         inputs = self.processor(images=imgs, return_tensors="pt", padding=True)
-        outputs = self.model(**inputs)
-        # TODO: check type of outputs
+        # tensor
+        outputs = self.model.get_image_features(**inputs)
+        outputs = outputs.tolist()
         return outputs
     
     def embed(self, data: RetrievalData) -> List[Vector]:
@@ -181,6 +187,27 @@ class VitClip(EmbeddingModel):
             elif item.modality == ModalityType.IMAGE:
                 embeddings.extend(self.image_embedding_func([item.content])) 
                 
+        return embeddings
+    
+    def batch_embed(self, data: RetrievalData) -> List[Vector]:
+        embeddings = [None] * len(data.items)  # Initialize with placeholders
+        image_data = [(i, item.url) for i, item in enumerate(data.items) if item.modality == ModalityType.IMAGE]
+        text_data = [(i, item.content) for i, item in enumerate(data.items) if item.modality == ModalityType.TEXT]
+        
+        # Process image embeddings
+        if image_data:
+            indices, contents = zip(*image_data)
+            image_embeddings = self.batch_image_embedding_func(list(contents))
+            for idx, embedding in zip(indices, image_embeddings):
+                embeddings[idx] = embedding
+
+        # Process text embeddings
+        if text_data:
+            indices, contents = zip(*text_data)
+            text_embeddings = self.text_embedding_func(list(contents))
+            for idx, embedding in zip(indices, text_embeddings):
+                embeddings[idx] = embedding
+
         return embeddings
         
     

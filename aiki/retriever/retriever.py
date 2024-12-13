@@ -105,11 +105,38 @@ class DenseRetriever(BaseRetriever):
         if query.items[0].metadata:
             start_time = query.items[0].metadata.get("start_time", 0)
             end_time = query.items[0].metadata.get("end_time", int((datetime.now()).timestamp()))
+
+        # Measure embedding time
+        embed_start = datetime.now()
         if self.embedding_model:
             query_embeddings = self.embedding_model.embed(query)
-            vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, query_embeddings=query_embeddings, top_k=num, start_time = start_time, end_time = end_time)
+            embed_time = (datetime.now() - embed_start).total_seconds()
+            print(f"Embedding time: {embed_time:.3f}s")
+
+            # Measure vector query time
+            query_start = datetime.now()
+            vector_db_result = self.processor.execute_operation(
+                ModalityType.VECTOR, 
+                VectorHandlerOP.QUERY, 
+                query_embeddings=query_embeddings, 
+                top_k=num, 
+                start_time=start_time, 
+                end_time=end_time
+            )
+            query_time = (datetime.now() - query_start).total_seconds()
+            print(f"Vector query time: {query_time:.3f}s")
         else:
-            vector_db_result = self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.QUERY, queries, top_k=num, start_time = start_time, end_time = end_time)
+            vector_db_result = self.processor.execute_operation(
+                ModalityType.VECTOR, 
+                VectorHandlerOP.QUERY, 
+                queries, 
+                top_k=num, 
+                start_time=start_time, 
+                end_time=end_time
+            )
+
+        # Measure data retrieval time
+        retrieve_start = datetime.now()
         for item in vector_db_result:
             for (_id, modality_type) in item:
                 operation = TextHandlerOP.MGET
@@ -117,7 +144,12 @@ class DenseRetriever(BaseRetriever):
                     operation = ImageHandlerOP.MGET
                 elif modality_type == ModalityType.TEXT:
                     operation = TextHandlerOP.MGET
-                self.data_pool.add("_search", self.processor.execute_operation(modality_type, operation, [str(_id)])[0])
+                self.data_pool.add(
+                    "_search", 
+                    self.processor.execute_operation(modality_type, operation, [str(_id)])[0]
+                )
+        retrieve_time = (datetime.now() - retrieve_start).total_seconds()
+        print(f"Data retrieval time: {retrieve_time:.3f}s")
 
     def search(self, query: RetrievalData, num: int = 10) -> RetrievalData:
         self._search(query, num)

@@ -32,10 +32,10 @@ def proxy_off():
     os.environ.pop('HTTPS_PROXY', None)
 
 proxy_on()
-ak = AIKI(db_path="/mnt/hwfile/kilab/leishanzhe/db/wiki/")
+ak = AIKI(db_path="/mnt/hwfile/kilab/leishanzhe/db/wiki_full/")
 proxy_off()
 
-batch_size = 1024
+batch_size = 256
 batch_data = []
 
 path = '/mnt/hwfile/kilab/leishanzhe/data/wiki'

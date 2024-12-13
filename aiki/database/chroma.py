@@ -112,3 +112,6 @@ class ChromaDB(BaseVectorDatabase):
                 query_result.append((ObjectId(_id), modality))
             query_results.append(query_result)
         return query_results
+
+    def count(self):
+        return self._collection.count()

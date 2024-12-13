@@ -6,7 +6,7 @@ authors = ["rochacbruno"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<3.13"
 accelerate = "1.1.1"
 altair = "5.4.1"
 annotated-types = "0.7.0"
@@ -173,7 +173,8 @@ pysqlite3 = "^0.5.4"
 tortoise-orm = "^0.22.1"
 pytest-asyncio = "^0.24.0"
 tiktoken = "^0.8.0"
-pymilvus = "2.1"
+pymilvus = "2.5"
+chromadb = "^0.5.23"
 
 
 [build-system]

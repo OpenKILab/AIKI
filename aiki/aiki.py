@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 from typing import List, Union
 from aiki.database.sqlite import SQLiteDB
-from aiki.embedding_model.embedding_model import JinnaClip
+from aiki.embedding_model.embedding_model import JinnaClip, VitClip
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from aiki.database.milvus import MilvusDB
@@ -16,28 +16,31 @@ from aiki.multimodal.text import TextHandler, TextModalityData
 from aiki.multimodal.vector import VectorHandler
 from aiki.retriever.retriever import DenseRetriever
 from bson import ObjectId
+from transformers import CLIPModel
 import logging
+
+from aiki.database.chroma import ChromaDB
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("aiosqlite").setLevel(logging.WARNING)
 
 # TODO: aws s3 SDK
 class AIKI:
-    def __init__(self, db_path: str = "./db/", model_name: str = "jinaai/jina-clip-v2"):
+    def __init__(self, db_path: str = "./db/", model_name: str = "openai/clip-vit-base-patch32"):
         self.load_config()
         ## TODO:  summary 和 clip 间的切换
         try:
-            model = SentenceTransformer(model_name, trust_remote_code=True)
+            self.model = JinnaClip()
         except Exception as e:
             print(f"Error loading model: {e}")
             # Optionally, load a local model or take other actions
 
-        embedding_func = model.encode
+        embedding_func = self.model.embed
         self.processor = MultiModalProcessor()
         if not os.path.exists(db_path):
             os.makedirs(db_path, exist_ok=True)
         source_db = SQLiteDB(os.path.join(db_path, "source"))
-        chroma_db = MilvusDB(collection_name=f"index", persist_directory=os.path.join(db_path, "index"))
+        chroma_db = ChromaDB(collection_name=f"index", persist_directory=os.path.join(db_path, "index"))
 
         self.processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
         self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
