@@ -7,6 +7,7 @@ from aiki.embedding_model.embedding_model import JinnaClip, VitClip
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 from aiki.database.milvus import MilvusDB
+from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
 from aiki.indexer.indexer import ClipIndexer, MultimodalIndexer
 from aiki.modal.retrieval_data import RetrievalData
@@ -18,8 +19,6 @@ from aiki.retriever.retriever import DenseRetriever
 from bson import ObjectId
 from transformers import CLIPModel
 import logging
-
-from aiki.database.chroma import ChromaDB
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("aiosqlite").setLevel(logging.WARNING)
