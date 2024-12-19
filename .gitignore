@@ -149,3 +149,8 @@ db_creator/*
 
 # temporary tools
 tem_tools/*
+
+# log
+logs/*
+*.log
+log/*
