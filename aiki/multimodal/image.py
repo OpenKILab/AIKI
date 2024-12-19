@@ -8,6 +8,10 @@ from bson import ObjectId
 from urllib.request import urlopen
 import base64
 
+from aiki.util.s3.s3_client_manager import S3ClientManager
+from petrel_client.client import Client
+
+
 class ImageHandlerOP(BaseModalityHandlerOP):
     MSET = "mset"
     MGET = "mget"
@@ -17,7 +21,7 @@ class ImageHandlerOP(BaseModalityHandlerOP):
 class ImageModalityData(BaseModalityData):
     modality: ModalityType = ModalityType.IMAGE
     # url can be a http url or a data uri
-    _content: str = None
+    _content: Union[str, bytes] = None
     url: str = ""
 
     # content is a base64 encoded string
@@ -39,7 +43,11 @@ class ImageModalityData(BaseModalityData):
         self._content = content
         
     def load_content(self, path_or_url: str):
-        if os.path.isfile(path_or_url):
+        if path_or_url.startswith("s3://"):
+            client = Client('~/petreloss.conf')
+            data = client.get(path_or_url)
+            self._content = data
+        elif os.path.isfile(path_or_url):
             with open(path_or_url, "rb") as file:
                 data = file.read()
                 self._content = base64.b64encode(data).decode("utf-8")

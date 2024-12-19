@@ -1,11 +1,15 @@
+import asyncio
 from datetime import datetime
 import os
 from typing import List, Union
+from aiki.database.sqlite import SQLiteDB
+from aiki.embedding_model.embedding_model import JinnaClip, VitClip
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
+from aiki.database.milvus import MilvusDB
 from aiki.database.chroma import ChromaDB
 from aiki.database.json_file import JSONFileDB
-from aiki.indexer.indexer import MultimodalIndexer
+from aiki.indexer.indexer import ClipIndexer, MultimodalIndexer
 from aiki.modal.retrieval_data import RetrievalData
 from aiki.multimodal.base import ModalityType, MultiModalProcessor
 from aiki.multimodal.image import ImageModalityData
@@ -13,27 +17,45 @@ from aiki.multimodal.text import TextHandler, TextModalityData
 from aiki.multimodal.vector import VectorHandler
 from aiki.retriever.retriever import DenseRetriever
 from bson import ObjectId
+from transformers import CLIPModel
+import logging
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("aiosqlite").setLevel(logging.WARNING)
 
 # TODO: aws s3 SDK
 class AIKI:
-    def __init__(self, db_name: str = "xiaobu_summary", model_name: str = "lier007/xiaobu-embedding-v2"):
+    def __init__(self, db_path: str = "./db/", model_name: str = "openai/clip-vit-base-patch32"):
+        self.load_config()
+        ## TODO:  summary 和 clip 间的切换
         try:
-            model = SentenceTransformer(model_name)
+            self.model = JinnaClip()
         except Exception as e:
             print(f"Error loading model: {e}")
             # Optionally, load a local model or take other actions
 
-        embedding_func = model.encode
-        processor = MultiModalProcessor()
-        source_db = JSONFileDB(f"./db/{db_name}/{db_name}.json")
-        chroma_db = ChromaDB(collection_name=f"{db_name}_index", persist_directory=f"./db/{db_name}/{db_name}_index")
+        embedding_func = self.model.embed
+        self.processor = MultiModalProcessor()
+        if not os.path.exists(db_path):
+            os.makedirs(db_path, exist_ok=True)
+        source_db = SQLiteDB(os.path.join(db_path, "source"))
+        chroma_db = ChromaDB(collection_name=f"index", persist_directory=os.path.join(db_path, "index"))
 
-        processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
-        processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
-        processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
+        self.processor.register_handler(ModalityType.TEXT, TextHandler(database=source_db))
+        self.processor.register_handler(ModalityType.IMAGE, TextHandler(database=source_db))
+        self.processor.register_handler(ModalityType.VECTOR, VectorHandler(database=chroma_db, embedding_func=embedding_func))
         
-        self.dense_retriever = DenseRetriever(processor=processor)
-        self.multimodal_indexer = MultimodalIndexer(processor=processor)
+        self.dense_retriever = DenseRetriever(processor=self.processor, embedding_model = JinnaClip())
+        self.multimodal_indexer = ClipIndexer(processor=self.processor)
+        
+    async def _start_processor_worker(self):
+        await self.processor.start_worker()
+    
+    def load_config(self):
+        # ignore log
+        libraries = ["urllib3", "aiosqlite", "tortoise", "asyncio", "httpx", "chromadb", "botocore", "boto3"]
+        for lib in libraries:
+            logging.getLogger(lib).setLevel(logging.WARNING)
 
     def index(self, data: Union[str, List[str]]):
         with tqdm(total=1, desc="Indexing Process") as pbar:
@@ -87,7 +109,7 @@ class AIKI:
                         url=data,
                         _id=ObjectId(),
                         metadata={
-                            "timestamp": datetime.now().timestamp(),
+                            "timestamp": int(datetime.now().timestamp()),
                         }
                 ),
                 ]
@@ -100,9 +122,12 @@ class AIKI:
                         content=data,
                         _id=ObjectId(),
                         metadata={
-                            "timestamp": datetime.now().timestamp(),
+                            "timestamp": int(datetime.now().timestamp()),
                         }
                 ),
                 ]
             )
         self.multimodal_indexer.index(retrieval_data)
+        
+    def batch_index(self, data: RetrievalData):
+        self.multimodal_indexer.batch_index(data)

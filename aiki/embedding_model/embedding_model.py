@@ -1,7 +1,7 @@
 import base64
 from datetime import datetime
 import io
-from typing import List
+from typing import List, cast
 from transformers import AutoModel, AutoConfig
 import os
 from dotenv import load_dotenv
@@ -17,8 +17,10 @@ from aiki.multimodal.text import TextModalityData
 from aiki.multimodal.types import Vector
 from colpali_engine.models import ColPali, ColPaliProcessor
 from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from sentence_transformers import SentenceTransformer
 from numpy.typing import NDArray
 from bson import ObjectId
+from transformers import CLIPProcessor, CLIPModel
 
 class EmbeddingModel:
     def embed(self, data: RetrievalData) -> List[Vector]:
@@ -27,33 +29,40 @@ class EmbeddingModel:
 class JinnaClip(EmbeddingModel):
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.embedding_model = AutoModel.from_pretrained(
+        self.embedding_model = SentenceTransformer(
             'jinaai/jina-clip-v2', 
             trust_remote_code=True, 
-            device_map=self.device
         )
+        print("============================")
+        print(self.device)
+        print("============================")
+        self.embedding_model.to(self.device)  # Move the model to the specified device
         self.truncate_dim = 512
+        self.active_encode()
+        
+    def active_encode(self):
+        self.embedding_model.encode("active yourself", truncate_dim=self.truncate_dim)
     
     def text_embedding_func(self, data:List) -> List:
-        embeddings = []
-        for item in data:
-            embeddings.append(self.embedding_model.encode_text(item, truncate_dim=self.truncate_dim))
-        return embeddings
+        return self.embedding_model.encode(data, truncate_dim=self.truncate_dim)
     
     def image_embedding_func(self, data:List) -> List:
-        # data : base64 encoded image
-        embeddings = []
+        # data : base64 encoded image / bytes image
+        imgs = []
         for item in data:
-            base64_string = item
-            image_data = base64.b64decode(base64_string)
-            image_stream = io.BytesIO(image_data)
+            if isinstance(item, str):
+                base64_string = item
+                image_data = base64.b64decode(base64_string)
+                image_stream = io.BytesIO(image_data)
+            elif isinstance(item, bytes):
+                image_stream = item
             image = Image.open(image_stream)
-            embeddings.append(self.embedding_model.encode_image(image, truncate_dim=self.truncate_dim))
-            
+            imgs.append(image)
+        embeddings = self.embedding_model.encode(imgs, truncate_dim=self.truncate_dim)
         return embeddings
 
     def batch_image_embedding_func(self, data:List) -> List:
-        return self.embedding_model.encode_image(data, truncate_dim=self.truncate_dim)
+        return self.embedding_model.encode(data, truncate_dim=self.truncate_dim)
     
     def embed(self, data: RetrievalData) -> List[Vector]:
         embeddings = []
@@ -66,11 +75,24 @@ class JinnaClip(EmbeddingModel):
         return embeddings
 
     def batch_embed(self, data: RetrievalData) -> List[Vector]:
-        embeddings = []
-        urls = []
-        for item in data.items:
-            urls.append(item.url)
-        embeddings = self.batch_image_embedding_func(urls)
+        embeddings = [None] * len(data.items)  # Initialize with placeholders
+        image_data = [(i, item.url) for i, item in enumerate(data.items) if item.modality == ModalityType.IMAGE]
+        text_data = [(i, item.content) for i, item in enumerate(data.items) if item.modality == ModalityType.TEXT]
+        
+        # Process image embeddings
+        if image_data:
+            indices, contents = zip(*image_data)
+            image_embeddings = self.batch_image_embedding_func(list(contents))
+            for idx, embedding in zip(indices, image_embeddings):
+                embeddings[idx] = embedding
+
+        # Process text embeddings
+        if text_data:
+            indices, contents = zip(*text_data)
+            text_embeddings = self.text_embedding_func(list(contents))
+            for idx, embedding in zip(indices, text_embeddings):
+                embeddings[idx] = embedding
+
         return embeddings
     
 class ColPaliModel(EmbeddingModel):
@@ -126,6 +148,68 @@ class ColPaliModel(EmbeddingModel):
         torch_embedding_source_data = [torch.tensor(vector, dtype=torch.float32, device=self.device) for vector in embedding_source_data]
         scores = self.processor.score_multi_vector(query_embeddings, torch_embedding_source_data)
         return scores.tolist()
+    
+class VitClip(EmbeddingModel):
+    def __init__(self):
+        self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    
+    def text_embedding_func(self, data:List) -> List:
+        inputs = self.processor(text=data, return_tensors="pt", padding=True)
+        # tensor
+        outputs = self.model.get_text_features(**inputs)
+        outputs = outputs.tolist()
+        return outputs
+    
+    def image_embedding_func(self, data:List) -> List:
+        # data : base64 encoded image / bytes image
+        imgs = []
+        for item in data:
+            if isinstance(item, str):
+                base64_string = item
+                image_data = base64.b64decode(base64_string)
+                image_stream = io.BytesIO(image_data)
+            elif isinstance(item, bytes):
+                image_stream = item
+            image = Image.open(image_stream)
+            imgs.append(image)
+        inputs = self.processor(images=imgs, return_tensors="pt", padding=True)
+        # tensor
+        outputs = self.model.get_image_features(**inputs)
+        outputs = outputs.tolist()
+        return outputs
+    
+    def embed(self, data: RetrievalData) -> List[Vector]:
+        embeddings = []
+        for item in data.items:
+            if item.modality == ModalityType.TEXT:
+                embeddings.extend(self.text_embedding_func([item.content]))
+            elif item.modality == ModalityType.IMAGE:
+                embeddings.extend(self.image_embedding_func([item.content])) 
+                
+        return embeddings
+    
+    def batch_embed(self, data: RetrievalData) -> List[Vector]:
+        embeddings = [None] * len(data.items)  # Initialize with placeholders
+        image_data = [(i, item.url) for i, item in enumerate(data.items) if item.modality == ModalityType.IMAGE]
+        text_data = [(i, item.content) for i, item in enumerate(data.items) if item.modality == ModalityType.TEXT]
+        
+        # Process image embeddings
+        if image_data:
+            indices, contents = zip(*image_data)
+            image_embeddings = self.batch_image_embedding_func(list(contents))
+            for idx, embedding in zip(indices, image_embeddings):
+                embeddings[idx] = embedding
+
+        # Process text embeddings
+        if text_data:
+            indices, contents = zip(*text_data)
+            text_embeddings = self.text_embedding_func(list(contents))
+            for idx, embedding in zip(indices, text_embeddings):
+                embeddings[idx] = embedding
+
+        return embeddings
+        
     
 def encode_image_to_base64(file_path: str) -> str:
     with open(file_path, "rb") as image_file:
