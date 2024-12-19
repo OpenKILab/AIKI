@@ -140,3 +140,12 @@ result/
 mmdu/
 videos/
 db/
+
+# multi transformers
+examples/whispe/*
+
+# construct db
+db_creator/*
+
+# temporary tools
+tem_tools/*

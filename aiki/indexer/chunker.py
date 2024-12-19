@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
+from chonkie import TokenChunker
+import tiktoken
 
 class BaseChunker(ABC):
     '''
@@ -14,14 +16,19 @@ class BaseChunker(ABC):
     5. LLM-based chunking
         使用LLM来根据上下文确定块中应包含多少文本以及哪些文本的可能性。受限于llm上下文长度
     '''
+    def __init__(self, chunk_size: int = 512):
+        self.tokenizer = tiktoken.encoding_for_model('gpt-4o')
+        self.chunker = TokenChunker(self.tokenizer, chunk_size=chunk_size)
+        self.chunk_size = chunk_size
+        
     def chunk(self, data: str) -> List[str]:
         raise NotImplementedError(f"{self.__class__.__name__}.chunk() must be implemented in subclasses.")
 
 class FixedSizeChunker(BaseChunker):
-    def __init__(self, chunk_size: int = 1024):
+    def __init__(self, chunk_size: int = 512):
+        super().__init__(chunk_size)
         if chunk_size <= 0:
             raise ValueError("chunk_size must be a positive integer")
-        self.chunk_size = chunk_size
 
     def chunk(self, data: str):
         if not isinstance(data, str):
@@ -29,7 +36,14 @@ class FixedSizeChunker(BaseChunker):
         if not data:
             return []
 
-        chunks = []
-        for i in range(0, len(data), self.chunk_size):
-            chunks.append(data[i:i + self.chunk_size])
-        return chunks
+        results = []
+        
+        tokenizer = tiktoken.encoding_for_model('gpt-4o')
+        chunker = TokenChunker(tokenizer)
+        chunks = chunker(data)
+
+        for chunk in chunks:
+            results.append(chunk.text)
+        
+        return results
+    
