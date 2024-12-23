@@ -8,7 +8,6 @@ from bson import ObjectId
 from urllib.request import urlopen
 import base64
 
-from aiki.util.s3.s3_client_manager import S3ClientManager
 from petrel_client.client import Client
 
 
