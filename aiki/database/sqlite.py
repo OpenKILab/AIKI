@@ -53,7 +53,7 @@ class SQLiteDB(BaseRelDatabase):
                 content=content,
                 url=getattr(data, 'url', None),
                 metadata=data.metadata if hasattr(data, 'metadata') else None,
-                colbert_tensor=data.colbert_tensor.tobytes() if hasattr(data, 'colbert_tensor') else None
+                colbert_tensor=data.metadata.get('colbert_tensor').tobytes() if (hasattr(data, 'metadata') and data.metadata and 'colbert_tensor' in data.metadata) else None,
             ))
         await ModalityData.bulk_create(modality_data_objects)
         end_time = time.time()  # 记录结束时间

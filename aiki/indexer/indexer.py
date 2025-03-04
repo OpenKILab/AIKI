@@ -89,11 +89,14 @@ class APISummaryGenerator(BaseSummaryGenerator):
         return summary
 
 class BaseIndexer(ABC):
-    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
+    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None, colpali: bool = False):
         self.model_path = model_path
         self.chunker = chunker
-        
         self.processor = processor
+        if colpali:
+            self.colpali = ColPaliModel()
+        else:
+            self.colpali = None
         
     def index(self, data):
         raise NotImplementedError(f"{self.__class__.__name__}.index() must be implemented in subclasses.")
@@ -130,8 +133,8 @@ class ImageIndexer(BaseIndexer):
             self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.UPSERT, [image_data])
 
 class MultimodalIndexer(BaseIndexer):
-    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator(), model_path: str = None):
-        super().__init__(processor=processor, model_path=model_path)
+    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), summary_generator: BaseSummaryGenerator = APISummaryGenerator(), model_path: str = None, colpali: bool = False):
+        super().__init__(processor=processor, model_path=model_path, colpali=colpali)
         self.text_indexer = TextIndexer(chunker=chunker, processor = processor, model_path=model_path)
         self.image_indexer = ImageIndexer(chunker=chunker, summary_generator=summary_generator, processor = processor, model_path=model_path)
     
@@ -158,8 +161,8 @@ class KnowledgeGraphIndexer(BaseIndexer):
     ...
     
 class ClipIndexer(BaseIndexer):
-    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None):
-        super().__init__(processor=processor, model_path=model_path)
+    def __init__(self, processor: MultiModalProcessor = MultiModalProcessor(), chunker: BaseChunker = FixedSizeChunker(), model_path: str = None, colpali: bool = False):
+        super().__init__(processor=processor, model_path=model_path, colpali=colpali)
         self.clip_model = JinnaClip()
         self.processor = processor
         self.chunker = chunker
@@ -185,11 +188,17 @@ class ClipIndexer(BaseIndexer):
                         )]
                     )
                     embeddings = self.clip_model.embed(retrieval_data)
-                    self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"]})])
+                    
+                    colbert_tensor = self.colpali.embed(retrieval_data) if self.colpali else None
+                    
+                    self.processor.execute_operation(ModalityType.TEXT, TextHandlerOP.MSET, [TextModalityData(_id=cur_id, content=data, metadata={"summary": "","timestamp": item.metadata["timestamp"], "colbert_tensor": colbert_tensor})])
                     # TODO: embeddings <-> RetrievalData <-> VectorHandlerOP.MSET(List[VectorModalityData])
                     self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value})])
             elif item.modality == ModalityType.IMAGE:
                 cur_id = item._id
+                
+                colbert_tensor = self.colpali.embed(retrieval_data) if self.colpali else None
+                item.metadata["colbert_tensor"] = colbert_tensor
                 retrieval_data = RetrievalData(
                             items=[ImageModalityData(
                                 _id=cur_id,
@@ -198,6 +207,7 @@ class ClipIndexer(BaseIndexer):
                             )]
                         )
                 embeddings = self.clip_model.embed(retrieval_data)
+                
                 self.processor.execute_operation(ModalityType.IMAGE, ImageHandlerOP.MSET, [ImageModalityData(_id=cur_id, url=item.url, metadata=item.metadata)])
                 self.processor.execute_operation(ModalityType.VECTOR, VectorHandlerOP.MSET, [VectorModalityData(_id=cur_id, content=embeddings[0], metadata={"__modality": item.modality.value, **item.metadata})])
     
@@ -282,7 +292,7 @@ def encode_image_to_base64(file_path: str) -> str:
 # Example usage
 if __name__ == "__main__":
     processor = MultiModalProcessor()
-    name = "wiki_clip"
+    name = "test"
     source_db = SQLiteDB(f"{name}")
     chroma_db = ChromaDB(collection_name=f"{name}_index", persist_directory=f"./db/{name}/{name}_index")
     
