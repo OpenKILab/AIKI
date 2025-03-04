@@ -154,3 +154,9 @@ tem_tools/*
 logs/*
 *.log
 log/*
+
+# RPC server
+test-*
+
+# github
+.github/

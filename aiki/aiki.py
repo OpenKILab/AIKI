@@ -18,6 +18,7 @@ from aiki.multimodal.vector import VectorHandler
 from aiki.retriever.retriever import DenseRetriever
 from bson import ObjectId
 from transformers import CLIPModel
+from aiki.indexer.chunker import CurSentenceChunker
 import logging
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -47,6 +48,10 @@ class AIKI:
         
         self.dense_retriever = DenseRetriever(processor=self.processor, embedding_model = JinnaClip())
         self.multimodal_indexer = ClipIndexer(processor=self.processor)
+        
+        self.cache_set = set()  # 用于快速查重的集合
+        self.cache = []  # 保持有序的缓存列表
+        self.max_cache_size = 100
         
     async def _start_processor_worker(self):
         await self.processor.start_worker()
@@ -81,22 +86,61 @@ class AIKI:
             pbar.update(1)
 
     def retrieve(self, data: str, num:int = 4):
+        search_num = num * 5
+        
         query_data = RetrievalData(
             items=[
-                    TextModalityData(
-                        content=data,
-                        _id=ObjectId(),
+                TextModalityData(
+                    content=data,
+                    _id=ObjectId(),
                 ),
             ]
         )
-        result_data = self.dense_retriever.search(query_data, num=num)
+        
+        result_data = self.dense_retriever.search(query_data, num=search_num)
         pick_up_data = []
+        
+        # Process all results
         for item in result_data.items:
+            result = None
             if item.modality == ModalityType.IMAGE:
-                pick_up_data.append({"id": item._id, "url": item.url, "summary": item.metadata.get("summary", "")})
+                result = {"id": str(item._id), "url": item.url, "summary": item.metadata.get("summary", "")}
             elif item.modality == ModalityType.TEXT:
-                pick_up_data.append({"id": item._id, "content": item.content})
-        return pick_up_data
+                result = {"id": str(item._id), "content": item.content}
+            
+            if result:
+                pick_up_data.append(result)
+        
+        # Filter out cached results
+        filtered_results = [item for item in pick_up_data if str(item["id"]) not in self.cache_set]
+        
+        # If we don't have enough new results, clear cache and use original results
+        if len(filtered_results) < num:
+            self.cache_set.clear()
+            self.cache.clear()
+            filtered_results = pick_up_data
+        
+        # Ensure we return exactly num results
+        filtered_results = filtered_results[:num]
+        
+        # Update cache with new results
+        for item in filtered_results:
+            item_id = str(item["id"])
+            if item_id not in self.cache_set:
+                self.cache_set.add(item_id)
+                self.cache.append(item_id)
+                # Remove oldest items if cache exceeds max size
+                if len(self.cache) > self.max_cache_size:
+                    oldest_id = self.cache.pop(0)
+                    self.cache_set.remove(oldest_id)
+        
+        chunker = CurSentenceChunker()
+        
+        for item in filtered_results:
+            chunks = chunker.chunk(item['content'])
+            [print(chunk) for chunk in chunks]
+        
+        return filtered_results
         
     def _index(self, data: str):
         image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff')

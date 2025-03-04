@@ -9,7 +9,7 @@ server = SimpleXMLRPCServer(
     allow_none=True
 )
 
-ak = AIKI(db_path="/mnt/hwfile/kilab/leishanzhe/db/law_industrycorpus2/")
+ak = AIKI(db_path="/mnt/hwfile/kilab/leishanzhe/db/law_industrycorpus2_sentence_chunker/")
 
 def hello_world():
     return {"message": "Hello World"}
