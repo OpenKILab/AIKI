@@ -1,5 +1,4 @@
 accelerate==1.1.1
--e git+ssh://git@github.com/OpenKILab/AIKI.git@2b00e32bf22b9e6016110d2b3a031a3a6e5e6710#egg=aiki
 altair==5.4.1
 annotated-types==0.7.0
 anyio==4.5.2
