@@ -9,6 +9,7 @@ from evaluate import (
     extract_answer
 )
 from bing_search import (
+    serp_google_web_search,
     bing_web_search,
     duckduckgo_web_search,
     extract_relevant_info,
@@ -26,6 +27,11 @@ from prompts import (
     get_task_instruction_math, 
     get_task_instruction_multi_choice, 
     get_task_instruction_code, 
+    get_webpage_to_reasonchain_instructiont_chinese
+)
+
+from get_llm import (
+    generate_text
 )
 
 # query -> url list -> bing search(like) struct result
@@ -37,16 +43,16 @@ url_snippets = {}
 url_cache = {}
 max_doc_len = 3000
 max_tokens = 32768
-prev_reasonings = ""
 # TODO: prev_reasonings -> search_query
-search_query = "whats ai"
+search_query = "哪种火龙果比较好吃"
+prev_reasonings = search_query
 model_path = "/fs-computility/ai-shen/shared/hf-hub/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 
 # ---------------------- Model Loading ----------------------
-tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
-tokenizer.padding_side = 'left'
+# tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+# if tokenizer.pad_token is None:
+#     tokenizer.pad_token = tokenizer.eos_token
+# tokenizer.padding_side = 'left'
 
 # # Define output directory based on model and dataset
 # if 'qwq' in model_path.lower():
@@ -64,12 +70,12 @@ tokenizer.padding_side = 'left'
 # ---------------------- Model Loading ----------------------
 
 # Initialize the LLM
-llm = LLM(
-    model=model_path,
-    tensor_parallel_size=torch.cuda.device_count(),
-    gpu_memory_utilization=0.95,
-    max_model_len=30000,
-)
+# llm = LLM(
+#     model=model_path,
+#     tensor_parallel_size=torch.cuda.device_count(),
+#     gpu_memory_utilization=0.95,
+#     max_model_len=30000,
+# )
 
 ## query -> url list -> bing search(like) struct result
 # Subscription key and endpoint for Bing Search API
@@ -80,8 +86,9 @@ if not BING_SUBSCRIPTION_KEY:
 bing_endpoint = "https://api.bing.microsoft.com/v7.0/search"
 
 # Perform the search
-print("Performing Bing Web Search...")
-results = bing_web_search(search_query, BING_SUBSCRIPTION_KEY, bing_endpoint)
+print("Performing Web Search...")
+# results = bing_web_search(search_query, BING_SUBSCRIPTION_KEY, bing_endpoint)
+results = serp_google_web_search(search_query)
 # results = duckduckgo_web_search(search_query)
 print(results)
 # TODO: cache
@@ -119,7 +126,7 @@ for url in urls_to_fetch:
 ## url list -> web content
 try:
     print("********fetch page content**********")
-    use_jina = False
+    use_jina = True
     print(f"********use jina: {use_jina}**********")
     fetched_contents = fetch_page_content(
         list(urls_to_fetch),
@@ -167,23 +174,29 @@ for i, doc_info in enumerate(relevant_info):
     #     coherent: bool = False,
     # )
 user_prompts = [
-    get_webpage_to_reasonchain_instruction(prev_reasonings, search_query, formatted_documents)
+    get_webpage_to_reasonchain_instructiont_chinese(prev_reasonings, search_query, formatted_documents)
 ]
 
 prompts = [{"role": "user", "content": up} for up in user_prompts]
-prompts = [tokenizer.apply_chat_template([p], tokenize=False, add_generation_prompt=True) for p in prompts]
+# prompts = [tokenizer.apply_chat_template([p], tokenize=False, add_generation_prompt=True) for p in prompts]
 
-output = llm.generate(
-    prompts,
-    sampling_params=SamplingParams(
-        max_tokens=max_tokens,
-        temperature=0.7,
-        top_p=0.8,
-        top_k=20,
-        repetition_penalty=1.05,
-    )
-)
+# output = llm.generate(
+#     prompts,
+#     sampling_params=SamplingParams(
+#         max_tokens=max_tokens,
+#         temperature=0.7,
+#         top_p=0.8,
+#         top_k=20,
+#         repetition_penalty=1.05,
+#     )
+# )
 
-raw_outputs = [out.outputs[0].text for out in output]
+# raw_outputs = [out.outputs[0].text for out in output]
+raw_outputs = generate_text(prompts)
 extracted_infos = [extract_answer(raw, mode='infogen') for raw in raw_outputs]
-print(extracted_infos)
+print("=======raw_outputs========")
+print(raw_outputs)
+print("=======raw_outputs========")
+# print("=======extracted_infos========")
+# print(extracted_infos)
+# print("=======extracted_infos========")

@@ -14,7 +14,7 @@ import string
 from typing import Optional, Tuple
 from nltk.tokenize import sent_tokenize
 from duckduckgo_search import DDGS
-from aiki.externalsearch.external_search import ExternalSearch
+from external_search import ExternalSearch
 
 import logging
 # logging.basicConfig(filename='bing_search.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -97,7 +97,7 @@ def extract_snippet_with_context(full_text: str, snippet: str, context_chars: in
     except Exception as e:
         return False, f"Failed to extract snippet context due to {str(e)}"
 
-def extract_text_from_url(url, use_jina=False, jina_api_key="jina_e600ddc05f8641b780644d16a65e97a3EmrQNxyz_kVWjePs7lFBKF4m1NIy", snippet: Optional[str] = None):
+def extract_text_from_url(url, use_jina=False, jina_api_key="jina_9012aea161ae4a76805f9229459ed51fP89uiwzjfLCOEhfYcgfsp4zzsYiy", snippet: Optional[str] = None):
     """
     Extract text from a URL. If a snippet is provided, extract the context related to it.
 
@@ -109,7 +109,7 @@ def extract_text_from_url(url, use_jina=False, jina_api_key="jina_e600ddc05f8641
     Returns:
         str: Extracted text or context.
     """
-    jina_api_key="jina_e600ddc05f8641b780644d16a65e97a3EmrQNxyz_kVWjePs7lFBKF4m1NIy"
+    jina_api_key="jina_9012aea161ae4a76805f9229459ed51fP89uiwzjfLCOEhfYcgfsp4zzsYiy"
     try:
         if use_jina:
             # logging.info("*********extract with jina************")  # Log instead of print
@@ -307,9 +307,12 @@ def duckduckgo_web_search(query):
     results = convert_duckduckgo_to_bing(results, query)
     return results
     
-def serp_google_web_search(query):
+def serp_google_web_search(query, num_web = 4):
     es = ExternalSearch(api_key="13712b498314b1bc54738124b9cda744ccf5e004a27635fbf13350fe1a50c652")
-    res = es.search_text(query, num_results = 10)
+    res = es.search_text(query, num_results = num_web)
+    print("========serp============")
+    print(res)
+    print("========serp============")
     output_data = convert_search_results(query, res)
     return output_data
 
@@ -372,8 +375,8 @@ def extract_relevant_info(search_results):
     
     return useful_info
 
-if __name__ == "__main__":
-    print(serp_google_web_search("火龙果"))
+# if __name__ == "__main__":
+    # print(serp_google_web_search("火龙果"))
 # # ------------------------------------------------------------
 
 # if __name__ == "__main__":

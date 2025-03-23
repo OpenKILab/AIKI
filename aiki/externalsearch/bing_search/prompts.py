@@ -66,6 +66,46 @@ def get_code_search_o1_instruction(MAX_SEARCH_LIMIT):
     )
 
 
+def get_webpage_to_reasonchain_instructiont_chinese(prev_reasoning, search_query, document):
+    return f"""
+    '**任务说明**：\n\n您的任务是根据以下输入阅读和分析网页：**先前的推理步骤**、**当前搜索查询**和**搜索的网页**。
+    您的目标是从**搜索的网页**中提取与**当前搜索查询**相关的有用信息，并将这些信息无缝集成到**先前的推理步骤**中，以继续推理原始问题。\n\n
+    **指导原则**：\n\n
+    1. **分析搜索的网页**：\n- 仔细检查每个搜索网页的内容。\n- 确定与**当前搜索查询**相关且可帮助推理原始问题的事实信息。\n\n
+    2. **提取相关信息：**\n- 从搜索到的网页中选择直接有助于推进**上一步推理步骤**的信息。\n- 确保提取的信息准确且相关。\n\n
+    3. **输出格式：**\n- **如果网页为当前搜索查询提供了有用的信息：
+        **显示以 `**最终信息**` 开头的信息，如下所示。\n
+        **最终信息**\n\n[有用的信息]\n\n- 
+        **如果网页没有为当前搜索查询提供任何有用的信息：**输出以下文本。\n\n
+        **最终信息**\n\n未找到有用的信息。\n\n
+        **Inputs:**
+        - **Previous Reasoning Steps:**  
+        {prev_reasoning}
+
+        - **Current Search Query:**  
+        {search_query}
+
+        - **Searched Web Pages:**  
+        {document}
+        现在您应该分析每个网页，并根据当前搜索查询“{search_query}”和前面的推理步骤找到有用的信息。并且把有用的信息和有用的信息进行关联
+        [OUTPUT EXAMPLE]:
+        火龙果的品种多样，不同品种在口感、甜度、营养价值等方面有所不同。以下是一些较为好吃的火龙果品种：
+
+        黄龙果：
+
+        果皮黄色，果肉白色。
+        甜度高，约18%左右。
+        果肉细腻，带有淡淡的酸味，层次丰富。
+        营养价值高，口感香甜[1][4]。
+        红龙果：
+
+        果皮红色，果肉紫红色。
+        甜度非常高，约18-25%。
+        果肉脆嫩，多汁，果香浓郁，带有花香。
+        营养价值高，富含花青素等抗氧化物质[1][5]。
+        其中[number]是对应的*webpage*。
+"""
+
 def get_webpage_to_reasonchain_instruction(prev_reasoning, search_query, document):
     return f"""**Task Instruction:**
 
