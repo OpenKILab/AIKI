@@ -59,7 +59,7 @@ def generate_info(query: str):
     # Perform the search
     print("Performing Web Search...")
     # results = bing_web_search(search_query, BING_SUBSCRIPTION_KEY, bing_endpoint)
-    results = serp_google_web_search(search_query)
+    results = serp_google_web_search(search_query, num_web=4)
     # results = duckduckgo_web_search(search_query)
     # TODO: cache
     # search_cache[search_query] = results

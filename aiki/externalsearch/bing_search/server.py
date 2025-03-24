@@ -18,7 +18,7 @@ def read_root():
 def read_item(item_id: int, q: str = None):
     return {"item_id": item_id, "query": q}
 
-@app.post("/get_info/")
+@app.post("/info/")
 async def server_search(request: Request):
     json_data = await request.json()
     question = json_data.get("question")
