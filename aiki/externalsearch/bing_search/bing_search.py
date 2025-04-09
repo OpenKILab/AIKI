@@ -97,7 +97,7 @@ def extract_snippet_with_context(full_text: str, snippet: str, context_chars: in
     except Exception as e:
         return False, f"Failed to extract snippet context due to {str(e)}"
 
-def extract_text_from_url(url, use_jina=False, jina_api_key="jina_9012aea161ae4a76805f9229459ed51fP89uiwzjfLCOEhfYcgfsp4zzsYiy", snippet: Optional[str] = None):
+def extract_text_from_url(url, use_jina=True, jina_api_key=None, snippet: Optional[str] = None):
     """
     Extract text from a URL. If a snippet is provided, extract the context related to it.
 
@@ -109,13 +109,16 @@ def extract_text_from_url(url, use_jina=False, jina_api_key="jina_9012aea161ae4a
     Returns:
         str: Extracted text or context.
     """
-    jina_api_key="jina_9012aea161ae4a76805f9229459ed51fP89uiwzjfLCOEhfYcgfsp4zzsYiy"
+    jina_api_key=os.getenv("JINA_API_KEY")
+    use_jina = True
     try:
         if use_jina:
-            # logging.info("*********extract with jina************")  # Log instead of print
+            logging.info("*********extract with jina************")  # Log instead of print
             jina_headers = {
                 'Authorization': f'Bearer {jina_api_key}',
                 'X-Return-Format': 'markdown',
+                "X-Engine": "direct",
+                "X-Timeout": "6",
                 # 'X-With-Links-Summary': 'true'
             }
             response = requests.get(f'https://r.jina.ai/{url}', headers=jina_headers).text
@@ -123,7 +126,7 @@ def extract_text_from_url(url, use_jina=False, jina_api_key="jina_9012aea161ae4a
             pattern = r"\(https?:.*?\)|\[https?:.*?\]"
             text = re.sub(pattern, "", response).replace('---','-').replace('===','=').replace('   ',' ').replace('   ',' ')
         else:
-            # logging.info("*********extract with BeautifulSoup************")  # Log instead of print            
+            logging.info("*********extract with BeautifulSoup************")  # Log instead of print            
             response = session.get(url, timeout=20)  # Set timeout to 20 seconds
             response.raise_for_status()  # Raise HTTPError if the request failed
             # Determine the content type
@@ -172,6 +175,7 @@ def fetch_page_content(urls, max_workers=4, use_jina=True, snippets: Optional[di
     """
     results = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        use_jina = True
         # Use tqdm to display a progress bar
         futures = {
             executor.submit(extract_text_from_url, url, use_jina, snippets.get(url) if snippets else None): url
